@@ -1,7 +1,4 @@
 
-
-// export const baseUrl = "http://localhost:3000";
-
 export const baseUrl ="https://buyzaar-0ye1.onrender.com"
 
 const summaryApi = () => {
