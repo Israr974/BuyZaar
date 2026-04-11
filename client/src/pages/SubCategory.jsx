@@ -10,7 +10,11 @@ import ViewImage from "../components/ViewImage";
 import ConfirmBox from "../components/ConfirmBox";
 import { HiOutlinePencilSquare, HiOutlineEye } from "react-icons/hi2";
 import { MdOutlineDeleteOutline } from "react-icons/md";
-import { PlusCircle, Search, Filter, Grid3x3, RefreshCw, Layers } from "lucide-react";
+import { 
+  PlusCircle, Search, Filter, Grid3x3, RefreshCw, Layers, X, FolderTree,
+  ChevronDown, Calendar, Package, AlertCircle
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 const SubCategory = () => {
   const [openSubCategory, setOpenSubCategory] = useState(false);
@@ -25,6 +29,21 @@ const SubCategory = () => {
   const [editData, setEditData] = useState(null);
   const [openConfirm, setOpenConfirm] = useState(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  
+  // New filters
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  const dateRangeOptions = [
+    { value: "all", label: "All Time" },
+    { value: "today", label: "Today" },
+    { value: "week", label: "This Week" },
+    { value: "month", label: "This Month" },
+    { value: "year", label: "This Year" }
+  ];
 
   const fetchSubCategories = async (showLoading = true) => {
     try {
@@ -52,49 +71,121 @@ const SubCategory = () => {
     fetchSubCategories();
   }, []);
 
-  
   const handleDelete = async () => {
     try {
       const res = await Axios({
         ...summaryApi().deleteSubCategory(editData._id),
       });
       if (res.data.success) {
+        toast.success("Sub-category deleted successfully!");
         fetchSubCategories(false);
         setOpenConfirm(false);
       }
     } catch (error) {
       AxiosError(error);
+      toast.error("Failed to delete sub-category");
     }
   };
 
-  
-  const filteredData = data.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategoryFilter === "all" || 
-      item.category.some(cat => cat._id === selectedCategoryFilter);
-    return matchesSearch && matchesCategory;
-  });
+  const isWithinDateRange = (createdAt) => {
+    if (dateRangeFilter === "all") return true;
+    
+    const date = new Date(createdAt);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(today.getMonth() - 1);
+    const yearAgo = new Date(today);
+    yearAgo.setFullYear(today.getFullYear() - 1);
 
-  
+    switch (dateRangeFilter) {
+      case "today": return date >= today;
+      case "week": return date >= weekAgo;
+      case "month": return date >= monthAgo;
+      case "year": return date >= yearAgo;
+      default: return true;
+    }
+  };
+
+  const getFilteredData = () => {
+    let filtered = [...data];
+    
+    if (searchTerm) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (selectedCategoryFilter !== "all") {
+      filtered = filtered.filter(item =>
+        item.category.some(cat => cat._id === selectedCategoryFilter)
+      );
+    }
+    
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(item => 
+        (item.status || "active") === statusFilter
+      );
+    }
+    
+    filtered = filtered.filter(item => isWithinDateRange(item.createdAt));
+    
+    const sortMultiplier = sortOrder === "asc" ? 1 : -1;
+    
+    if (sortBy === "name") {
+      filtered.sort((a, b) => sortMultiplier * a.name.localeCompare(b.name));
+    } else if (sortBy === "newest") {
+      filtered.sort((a, b) => sortMultiplier * (new Date(b.createdAt) - new Date(a.createdAt)));
+    } else if (sortBy === "oldest") {
+      filtered.sort((a, b) => sortMultiplier * (new Date(a.createdAt) - new Date(b.createdAt)));
+    } else if (sortBy === "categories") {
+      filtered.sort((a, b) => sortMultiplier * (b.category.length - a.category.length));
+    }
+    
+    return filtered;
+  };
+
+  const filteredData = getFilteredData();
+
   const uniqueCategories = Array.from(
     new Map(data.flatMap(item => 
       item.category?.map(cat => [cat._id, cat]) || []
     ).filter(Boolean)).values()
   );
 
- 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategoryFilter("all");
+    setStatusFilter("all");
+    setDateRangeFilter("all");
+    setSortBy("name");
+    setSortOrder("asc");
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (selectedCategoryFilter !== "all") count++;
+    if (statusFilter !== "all") count++;
+    if (dateRangeFilter !== "all") count++;
+    if (sortBy !== "name") count++;
+    return count;
+  };
+
   const column = [
     columnHelper.accessor("name", {
       header: "Name",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-            <Layers size={18} className="text-primary" />
+            <FolderTree size={18} className="text-primary" />
           </div>
           <div>
             <p className="font-medium text-text">{row.original.name}</p>
             <p className="text-xs text-text-muted">
-              {row.original.category?.length || 0} categories
+              {row.original.category?.length || 0} parent {row.original.category?.length === 1 ? 'category' : 'categories'}
             </p>
           </div>
         </div>
@@ -106,11 +197,11 @@ const SubCategory = () => {
         <div className="flex justify-center">
           <div className="relative group">
             <img
-              src={row.original.image}
+              src={row.original.image || "https://via.placeholder.com/48x48?text=No+Image"}
               alt={row.original.name}
               className="h-12 w-12 rounded-lg object-cover border border-border hover:border-primary transition-all duration-300 cursor-pointer group-hover:scale-110"
               onError={(e) => {
-                e.target.src = "https://via.placeholder.com/48x48?text=Sub+Cat";
+                e.target.src = "https://via.placeholder.com/48x48?text=No+Image";
               }}
             />
             <button
@@ -131,14 +222,14 @@ const SubCategory = () => {
           {row.original.category?.slice(0, 3).map((c) => (
             <span
               key={`table-${c._id}`}
-              className="badge-primary px-2.5 py-1 rounded-full text-xs"
+              className="badge bg-primary/10 text-primary px-2.5 py-1 rounded-full text-xs"
             >
               {c.name}
             </span>
           ))}
           {row.original.category?.length > 3 && (
-            <span className="badge px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-              +{row.original.category.length - 3} more
+            <span className="badge bg-bg-alt text-text-muted px-2.5 py-1 rounded-full text-xs">
+              +{row.original.category.length - 3}
             </span>
           )}
         </div>
@@ -147,10 +238,10 @@ const SubCategory = () => {
     columnHelper.accessor("status", {
       header: "Status",
       cell: ({ row }) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          row.original.status === "active" 
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800"
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+          (row.original.status || "active") === "active" 
+            ? "bg-success/10 text-success"
+            : "bg-error/10 text-error"
         }`}>
           {row.original.status || "active"}
         </span>
@@ -159,26 +250,26 @@ const SubCategory = () => {
     columnHelper.accessor("_id", {
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex justify-center gap-2">
+        <div className="flex gap-2">
           <button
             onClick={() => {
               setOpenEdit(true);
               setEditData(row.original);
             }}
-            className="p-2 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition-all duration-200 hover:scale-105 hover:shadow-sm"
+            className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-200"
             title="Edit Sub-category"
           >
-            <HiOutlinePencilSquare size={18} />
+            <HiOutlinePencilSquare size={16} />
           </button>
           <button
             onClick={() => {
               setOpenConfirm(true);
               setEditData(row.original);
             }}
-            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all duration-200 hover:scale-105 hover:shadow-sm"
+            className="p-2 rounded-lg bg-error/10 text-error hover:bg-error hover:text-white transition-all duration-200"
             title="Delete Sub-category"
           >
-            <MdOutlineDeleteOutline size={18} />
+            <MdOutlineDeleteOutline size={16} />
           </button>
         </div>
       ),
@@ -186,222 +277,375 @@ const SubCategory = () => {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50/50 to-primary/5 p-6">
- 
-      <div className="glass rounded-2xl p-6 mb-8 shadow-lg fade-in">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+    <div className="min-h-screen bg-bg p-4 md:p-6 fade-in">
+      <div className="container-narrow">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-text">
               Sub-Category Management
-            </h2>
-            <p className="text-text-muted mt-2">
-              Organize your products with sub-categories under parent categories
-            </p>
+            </h1>
+          </div>
+          <p className="text-text-muted ml-4">
+            Organize your products with sub-categories under parent categories
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Total Sub-Categories</p>
+                <p className="text-2xl font-bold gradient-text">{data.length}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <FolderTree className="w-6 h-6 text-primary" />
+              </div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="btn-outline flex items-center gap-2 px-4 py-2.5 rounded-xl hover:shadow-sm transition-all disabled:opacity-50"
-              title="Refresh data"
-            >
-              <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
-              {isRefreshing ? "Refreshing..." : "Refresh"}
-            </button>
-            <button
-              onClick={() => setOpenSubCategory(true)}
-              className="btn-primary flex items-center gap-3 px-6 py-3 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <PlusCircle size={20} />
-              Add Sub-Category
-            </button>
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Parent Categories</p>
+                <p className="text-2xl font-bold gradient-text">{uniqueCategories.length}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <Layers className="w-6 h-6 text-accent" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Active</p>
+                <p className="text-2xl font-bold gradient-text">
+                  {data.filter(c => (c.status || "active") !== "inactive").length}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <Grid3x3 className="w-6 h-6 text-success" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Multi-Category</p>
+                <p className="text-2xl font-bold gradient-text">
+                  {data.filter(c => c.category?.length > 1).length}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-warning" />
+              </div>
+            </div>
           </div>
         </div>
 
-        
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-6 pt-6 border-t border-border">
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <div className="relative flex-1 sm:w-80">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+        {/* Search and Filter Bar */}
+        <div className="bg-card rounded-xl border border-border p-5 mb-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="relative flex-1 w-full lg:max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
               <input
                 type="text"
                 placeholder="Search sub-categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-12 pr-4 py-3 rounded-xl w-full"
+                className="input pl-10 pr-4 py-2.5 w-full"
               />
             </div>
             
-            <div className="flex items-center gap-2">
-              <Filter size={18} className="text-text-muted" />
-              <select
-                value={selectedCategoryFilter}
-                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="input py-3 rounded-xl min-w-[180px]"
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-text-muted" />
+                <select
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  className="input py-2.5 rounded-lg text-sm min-w-[160px]"
+                >
+                  <option value="all">All Categories</option>
+                  {uniqueCategories.map(category => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Filter Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilterMenu(!showFilterMenu)}
+                  className={`btn-outline px-4 py-2.5 rounded-lg flex items-center gap-2 ${
+                    getActiveFiltersCount() > 0 ? "bg-primary/10 text-primary border-primary" : ""
+                  }`}
+                >
+                  <Filter size={16} />
+                  Filter
+                  {getActiveFiltersCount() > 0 && (
+                    <span className="ml-1 text-xs bg-primary text-white px-1.5 py-0.5 rounded-full">
+                      {getActiveFiltersCount()}
+                    </span>
+                  )}
+                  <ChevronDown size={14} className={`transition-transform ${showFilterMenu ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showFilterMenu && (
+                  <div className="absolute right-0 mt-2 w-80 bg-card rounded-xl border border-border shadow-lg z-10 p-4">
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      <div>
+                        <label className="text-sm font-medium text-text mb-2 block">Status</label>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="input py-2 text-sm w-full"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-text mb-2 block flex items-center gap-2">
+                          <Calendar size={14} />
+                          Date Range
+                        </label>
+                        <select
+                          value={dateRangeFilter}
+                          onChange={(e) => setDateRangeFilter(e.target.value)}
+                          className="input py-2 text-sm w-full"
+                        >
+                          {dateRangeOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="border-t border-border pt-3">
+                        <label className="text-sm font-medium text-text mb-2 block">Sort By</label>
+                        <div className="flex gap-2">
+                          <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="input py-2 text-sm flex-1"
+                          >
+                            <option value="name">Name</option>
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="categories">Categories Count</option>
+                          </select>
+                          <button
+                            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                            className="btn-outline px-3 py-2 rounded-lg"
+                          >
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={clearFilters}
+                        className="w-full btn btn-outline py-2 text-sm mt-2"
+                      >
+                        Clear All Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="btn-outline px-4 py-2.5 rounded-lg flex items-center gap-2"
               >
-                <option value="all">All Categories</option>
-                {uniqueCategories.map(category => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
+              
+              <button
+                onClick={() => setOpenSubCategory(true)}
+                className="btn-primary px-5 py-2.5 rounded-lg flex items-center gap-2"
+              >
+                <PlusCircle size={16} />
+                Add Sub-Category
+              </button>
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-text-muted">
-              <Grid3x3 size={18} />
-              <span className="font-medium">
-                {filteredData.length} of {data.length} Sub-categories
-              </span>
+          {/* Active Filters Display */}
+          {getActiveFiltersCount() > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+              <span className="text-sm text-text-muted">Active filters:</span>
+              {searchTerm && (
+                <span className="badge bg-primary/10 text-primary px-3 py-1 text-sm rounded-full flex items-center gap-1">
+                  Search: "{searchTerm}"
+                  <button onClick={() => setSearchTerm("")} className="hover:text-error">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {selectedCategoryFilter !== "all" && (
+                <span className="badge bg-primary/10 text-primary px-3 py-1 text-sm rounded-full flex items-center gap-1">
+                  Category: {uniqueCategories.find(c => c._id === selectedCategoryFilter)?.name}
+                  <button onClick={() => setSelectedCategoryFilter("all")} className="hover:text-error">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {statusFilter !== "all" && (
+                <span className="badge bg-primary/10 text-primary px-3 py-1 text-sm rounded-full flex items-center gap-1">
+                  Status: {statusFilter}
+                  <button onClick={() => setStatusFilter("all")} className="hover:text-error">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {dateRangeFilter !== "all" && (
+                <span className="badge bg-primary/10 text-primary px-3 py-1 text-sm rounded-full flex items-center gap-1">
+                  Date: {dateRangeOptions.find(d => d.value === dateRangeFilter)?.label}
+                  <button onClick={() => setDateRangeFilter("all")} className="hover:text-error">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {sortBy !== "name" && (
+                <span className="badge bg-primary/10 text-primary px-3 py-1 text-sm rounded-full flex items-center gap-1">
+                  Sort: {sortBy === "newest" ? "Newest First" : sortBy === "oldest" ? "Oldest First" : "By Categories"}
+                  <button onClick={() => setSortBy("name")} className="hover:text-error">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={clearFilters}
+                className="text-sm text-primary hover:underline ml-2"
+              >
+                Clear all
+              </button>
             </div>
-          </div>
+          )}
         </div>
-      </div>
 
-      
-      <div className="glass rounded-2xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="spinner mb-4 border-primary"></div>
-            <p className="text-text-muted">Loading sub-categories...</p>
-          </div>
-        ) : filteredData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center mb-6">
-              <Layers size={48} className="text-primary/40" />
+        {/* Table Section */}
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="spinner w-12 h-12 mb-4"></div>
+              <p className="text-text-muted">Loading sub-categories...</p>
             </div>
-            <h3 className="text-xl font-semibold text-text mb-2">
-              {searchTerm || selectedCategoryFilter !== "all" 
-                ? "No matching sub-categories found" 
-                : "No sub-categories yet"}
-            </h3>
-            <p className="text-text-muted mb-6 max-w-md">
-              {searchTerm || selectedCategoryFilter !== "all"
-                ? "Try adjusting your search or filter criteria"
-                : "Start by creating your first sub-category"}
-            </p>
-            {(searchTerm || selectedCategoryFilter !== "all") ? (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCategoryFilter("all");
-                }}
-                className="btn-primary flex items-center gap-2"
-              >
-                Clear Filters
-              </button>
-            ) : (
-              <button
-                onClick={() => setOpenSubCategory(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <PlusCircle size={18} />
-                Create First Sub-category
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="max-h-[60vh] overflow-y-auto">
-              <TableDisplay 
-                data={filteredData} 
-                column={column} 
-                className="min-w-full"
-              />
+          ) : filteredData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+              <div className="w-24 h-24 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center mb-4">
+                <FolderTree className="w-12 h-12 text-primary/40" />
+              </div>
+              <h3 className="text-xl font-display font-semibold text-text mb-2">
+                {getActiveFiltersCount() > 0 ? "No matching sub-categories found" : "No sub-categories yet"}
+              </h3>
+              <p className="text-text-muted mb-6 max-w-md">
+                {getActiveFiltersCount() > 0
+                  ? "Try adjusting your search or filter criteria"
+                  : "Start by creating your first sub-category"}
+              </p>
+              {getActiveFiltersCount() > 0 ? (
+                <button onClick={clearFilters} className="btn btn-primary">
+                  Clear Filters
+                </button>
+              ) : (
+                <button
+                  onClick={() => setOpenSubCategory(true)}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  <PlusCircle size={18} />
+                  Create First Sub-category
+                </button>
+              )}
             </div>
-            
-            
-            {(searchTerm || selectedCategoryFilter !== "all") && (
-              <div className="border-t border-border p-4 bg-gray-50/50">
-                <div className="flex items-center justify-between">
-                  <p className="text-text-muted text-sm">
-                    Showing <span className="font-semibold text-primary">{filteredData.length}</span> of{" "}
-                    <span className="font-semibold">{data.length}</span> sub-categories
-                    {searchTerm && (
-                      <> matching "<span className="font-medium">{searchTerm}</span>"</>
-                    )}
-                    {selectedCategoryFilter !== "all" && (
-                      <> in selected category</>
-                    )}
-                  </p>
-                  {(searchTerm || selectedCategoryFilter !== "all") && (
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <TableDisplay 
+                  data={filteredData} 
+                  columns={column}
+                  title={`Sub-Categories (${filteredData.length})`}
+                />
+              </div>
+              
+              {/* Results Info */}
+              {getActiveFiltersCount() > 0 && (
+                <div className="border-t border-border p-4 bg-bg-alt">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-text-muted text-sm">
+                      Showing <span className="font-semibold text-primary">{filteredData.length}</span> of{" "}
+                      <span className="font-semibold">{data.length}</span> sub-categories
+                    </p>
                     <button
-                      onClick={() => {
-                        setSearchTerm("");
-                        setSelectedCategoryFilter("all");
-                      }}
-                      className="text-sm text-primary hover:text-primary-dark transition-colors"
+                      onClick={clearFilters}
+                      className="text-sm text-primary hover:underline"
                     >
                       Clear all filters
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      
+      {/* Modals - Same as before */}
       {openSubCategory && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="">
-            <UploadSubCategory
-              onClose={() => setOpenSubCategory(false)}
-              fetchSubCategories={fetchSubCategories}
-              onSuccess={() => {
-                setOpenSubCategory(false);
-              }}
-            />
-          </div>
+          <UploadSubCategory
+            onClose={() => setOpenSubCategory(false)}
+            onSuccess={() => {
+              setOpenSubCategory(false);
+              fetchSubCategories(false);
+            }}
+          />
         </div>
       )}
 
-      {imageUrl && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <ViewImage url={imageUrl} close={() => setImageUrl("")} />
-        </div>
-      )}
+      {imageUrl && <ViewImage url={imageUrl} close={() => setImageUrl("")} />}
 
       {openEdit && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="">
-            <EditSubCategory
-              editData={editData}
-              onClose={() => setOpenEdit(false)}
-              onSuccess={() => {
-                setOpenEdit(false);
-                fetchSubCategories(false);
-              }}
-            />
-          </div>
+          <EditSubCategory
+            editData={editData}
+            onClose={() => setOpenEdit(false)}
+            onSuccess={() => {
+              setOpenEdit(false);
+              fetchSubCategories(false);
+            }}
+          />
         </div>
       )}
 
       {openConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="">
-            <ConfirmBox
-              confirm={handleDelete}
-              close={() => setOpenConfirm(false)}
-              cancel={() => setOpenConfirm(false)}
-              title="Delete Sub-category"
-              message="Are you sure you want to delete this sub-category? This will affect all associated products."
-              confirmText="Delete"
-              cancelText="Cancel"
-              confirmColor="red"
-            />
-          </div>
-        </div>
+        <ConfirmBox
+          confirm={handleDelete}
+          close={() => setOpenConfirm(false)}
+          cancel={() => setOpenConfirm(false)}
+          title="Delete Sub-category"
+          message={`Are you sure you want to delete "${editData?.name}"? This will affect all associated products.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirmColor="red"
+        />
       )}
 
-      
       <button
         onClick={() => setOpenSubCategory(true)}
-        className="md:hidden fixed bottom-6 right-6 bg-primary text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 z-40"
+        className="lg:hidden fixed bottom-6 right-6 bg-gradient-primary text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 z-40"
         aria-label="Add sub-category"
       >
         <PlusCircle size={24} />

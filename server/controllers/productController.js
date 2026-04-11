@@ -6,6 +6,7 @@
 import multer from "multer";
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
+import Review from "../models/Review.js";
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -157,9 +158,28 @@ export const getProduct = async (req, res) => {
         .skip(skip)
         .limit(limit)
         .populate("category")
-        .populate("sub_category"),
+        .populate("sub_category")
+        .lean(),
       Product.countDocuments(query),
     ]);
+
+    // Get review counts for each product
+    const productIds = data.map(p => p._id);
+    const reviewCounts = await Review.aggregate([
+      { $match: { product: { $in: productIds }, status: "approved" } },
+      { $group: { _id: "$product", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } }
+    ]);
+
+    const reviewMap = {};
+    reviewCounts.forEach(rc => {
+      reviewMap[rc._id] = { count: rc.count, avgRating: rc.avgRating };
+    });
+
+    const enrichedData = data.map(product => ({
+      ...product,
+      reviewCount: reviewMap[product._id]?.count || 0,
+      rating: reviewMap[product._id]?.avgRating ? parseFloat(reviewMap[product._id].avgRating.toFixed(1)) : 0,
+    }));
 
     return res.json({
       message: "Product Details",
@@ -167,7 +187,7 @@ export const getProduct = async (req, res) => {
       error: false,
       totalCount,
       totalNoPage: Math.ceil(totalCount / limit),
-      data,
+      data: enrichedData,
     });
 
   } catch (error) {
@@ -178,7 +198,6 @@ export const getProduct = async (req, res) => {
     });
   }
 };
-
 
 export const getProductByCategoryId = async (req, res) => {
   try {
@@ -212,14 +231,13 @@ export const getProductByCategoryId = async (req, res) => {
   }
 };
 
-
 export const getProductByCategoryAndSubCategory = async (req, res) => {
   try {
     let { categoryId, subCategoryId, page, limit } = req.body;
 
-    if (!categoryId || !subCategoryId) {
+    if (!categoryId) {
       return res.status(400).json({
-        message: "Provide Category And SubCategory",
+        message: "Category ID is required",
         success: false,
         error: true,
       });
@@ -228,10 +246,16 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     page = Number(page) || 1;
     limit = Number(limit) || 10;
 
-    const query = {
+    // Build query with category only first
+    let query = {
       category: { $in: Array.isArray(categoryId) ? categoryId : [categoryId] },
-      sub_category: { $in: Array.isArray(subCategoryId) ? subCategoryId : [subCategoryId] },
     };
+    
+    // ONLY add sub_category filter if subCategoryId is NOT "all"
+    if (subCategoryId && subCategoryId !== 'all') {
+      query.sub_category = { $in: Array.isArray(subCategoryId) ? subCategoryId : [subCategoryId] };
+    }
+    // If subCategoryId is "all", we don't add sub_category filter at all
 
     const skip = (page - 1) * limit;
 
@@ -239,7 +263,9 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
       Product.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .populate('category', 'name')
+        .populate('sub_category', 'name'),
       Product.countDocuments(query),
     ]);
 
@@ -255,6 +281,7 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Error:", error);
     return res.status(500).json({
       success: false,
       error: true,
@@ -262,6 +289,7 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     });
   }
 };
+
 
 
 export const getProductById = async (req, res) => {
@@ -288,11 +316,27 @@ export const getProductById = async (req, res) => {
       });
     }
 
+    // Fetch reviews for this product
+    const reviews = await Review.find({ product: productId, status: "approved" })
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    // Calculate rating if not already stored
+    if (reviews.length > 0 && !product.rating) {
+      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      product.rating = parseFloat(avgRating.toFixed(1));
+      product.reviewCount = reviews.length;
+      await product.save();
+    }
+
     return res.json({
       message: "Product Details",
       success: true,
       error: false,
-      data: product,
+      data: {
+        ...product.toObject(),
+        reviews: reviews,
+      },
     });
 
   } catch (error) {
@@ -303,7 +347,6 @@ export const getProductById = async (req, res) => {
     });
   }
 };
-
 
 export const updateProductDetail = async (req, res) => {
   try {

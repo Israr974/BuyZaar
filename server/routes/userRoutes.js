@@ -9,6 +9,7 @@ import userModelRegister, {
   refreshTokenController,
   getUserDetails,
   userVerifyEmail,
+  resendVerificationEmail,
 } from "../controllers/userModel.js";
 import auth from "../middleware/auth.js";
 
@@ -17,6 +18,7 @@ const userRoute = Router();
 
 userRoute.post("/register", userModelRegister);
 userRoute.get("/verify-email", userVerifyEmail);
+userRoute.post("/resend-verification",resendVerificationEmail)
 
 
 userRoute.post("/login", userLogin);

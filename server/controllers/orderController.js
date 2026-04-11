@@ -12,7 +12,6 @@ const generateOrderNumber = () => {
 
 
 const calculateShippingFee = (totalItems, pincode) => {
-  
   const baseFee = 50;
   const perItemFee = 10;
   return baseFee + (totalItems * perItemFee);
@@ -20,14 +19,12 @@ const calculateShippingFee = (totalItems, pincode) => {
 
 
 const isCODAvailable = (pincode, orderAmount) => {
-  
   const unavailablePincodes = ["123456", "654321", "111111"];
   
   if (unavailablePincodes.includes(pincode)) {
     return false;
   }
   
- 
   const codMaxAmount = 5000;
   if (orderAmount > codMaxAmount) {
     return false;
@@ -40,7 +37,6 @@ const isCODAvailable = (pincode, orderAmount) => {
 export const placeOrder = async (req, res) => {
   try {
     console.log("=== PLACE ORDER START ===");
-    
     
     const userId = req.user?.id || req.user?._id;
     
@@ -63,7 +59,6 @@ export const placeOrder = async (req, res) => {
     console.log("Request from user:", userId);
     console.log("Request body:", { items, shippingAddressId, paymentMethod });
 
-   
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -72,7 +67,6 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -94,7 +88,6 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    
     const validPaymentMethods = ["CARD", "UPI", "COD"];
     if (!validPaymentMethods.includes(paymentMethod)) {
       return res.status(400).json({
@@ -103,7 +96,6 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-  
     const address = await Address.findById(shippingAddressId);
     if (!address) {
       return res.status(404).json({
@@ -112,7 +104,6 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    
     if (paymentMethod === "COD") {
       if (!isCODAvailable(address.pincode, req.body.priceBreakdown?.total || 0)) {
         return res.status(400).json({
@@ -122,13 +113,11 @@ export const placeOrder = async (req, res) => {
       }
     }
 
-    
     const validatedItems = [];
     let totalItems = 0;
     let itemErrors = [];
     
     for (const item of items) {
-      
       if (!item.product || !item.quantity) {
         return res.status(400).json({
           success: false,
@@ -160,7 +149,7 @@ export const placeOrder = async (req, res) => {
       validatedItems.push({
         product: product._id,
         name: product.name,
-        image: product.images?.[0] || null,
+        image: product.image?.[0] || null,
         price: product.price,
         quantity: item.quantity
       });
@@ -168,7 +157,6 @@ export const placeOrder = async (req, res) => {
       totalItems += item.quantity;
     }
 
-    
     if (itemErrors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -177,13 +165,11 @@ export const placeOrder = async (req, res) => {
       });
     }
 
- 
     const orderNumber = generateOrderNumber();
-    
     
     const subTotal = validatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const shippingFee = calculateShippingFee(totalItems, address.pincode);
-    const tax = subTotal * 0.18; 
+    const tax = subTotal * 0.18;
     const total = subTotal + shippingFee + tax - discount;
     
     const priceBreakdown = {
@@ -193,7 +179,6 @@ export const placeOrder = async (req, res) => {
       discount: parseFloat(discount.toFixed(2)),
       total: parseFloat(total.toFixed(2))
     };
-
 
     const order = new Order({
       user: userId,
@@ -205,27 +190,22 @@ export const placeOrder = async (req, res) => {
         status: paymentMethod === "COD" ? "pending" : "pending"
       },
       priceBreakdown,
-      notes: {
-        customer: notes
-      },
+      notes: notes,
       couponCode,
       orderStatus: "pending"
     });
 
-    
     const savedOrder = await order.save();
     
-    console.log(" Order created:", {
+    console.log("Order created:", {
       orderId: savedOrder._id,
       orderNumber: savedOrder.orderNumber
     });
 
-   
     if (!user.orderHistory || !Array.isArray(user.orderHistory)) {
       user.orderHistory = [];
     }
     
-   
     user.orderHistory.push({
       orderId: savedOrder._id,
       orderNumber: savedOrder.orderNumber,
@@ -236,7 +216,6 @@ export const placeOrder = async (req, res) => {
       paymentMethod: savedOrder.payment.method
     });
     
-   
     if (user.orderHistory.length > 50) {
       user.orderHistory = user.orderHistory.slice(-50);
     }
@@ -244,7 +223,6 @@ export const placeOrder = async (req, res) => {
     await user.save();
     console.log("User order history updated. Total orders:", user.orderHistory.length);
 
-    
     for (const item of validatedItems) {
       await Product.findByIdAndUpdate(
         item.product,
@@ -259,7 +237,6 @@ export const placeOrder = async (req, res) => {
 
     console.log("Product stock updated");
 
-    
     return res.status(201).json({
       success: true,
       message: "Order placed successfully",
@@ -272,26 +249,12 @@ export const placeOrder = async (req, res) => {
     console.error("Error name:", error.name);
     console.error("Error message:", error.message);
     
- 
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
         message: "Validation error",
         error: Object.values(error.errors).map(e => e.message).join(", ")
       });
-    }
-    
-    if (error.code === 11000) {
-      console.error("Duplicate key error. Index causing issue:", error.keyPattern);
-      
-      
-      if (error.keyPattern?.orderId) {
-        return res.status(400).json({
-          success: false,
-          message: "Database index error",
-          fix: "Please remove orderId_1 index from MongoDB using: db.orders.dropIndex('orderId_1')"
-        });
-      }
     }
     
     return res.status(500).json({
@@ -314,12 +277,10 @@ export const getMyOrders = async (req, res) => {
       });
     }
 
-    
     const orders = await Order.find({ user: userId })
       .sort({ createdAt: -1 })
       .populate("items.product", "name image")
       .populate("shippingAddress");
-    
     
     const user = await User.findById(userId).select("orderHistory");
     
@@ -343,7 +304,6 @@ export const getMyOrders = async (req, res) => {
         shippingAddress: order.shippingAddress,
         priceBreakdown: order.priceBreakdown
       })),
-      
       orderHistory: user?.orderHistory || []
     });
     
@@ -399,7 +359,6 @@ export const getOrderById = async (req, res) => {
         timeline: {
           placed: order.createdAt,
           paid: order.paidAt,
-          shipped: order.shipping?.shippedAt,
           delivered: order.deliveredAt
         }
       }
@@ -420,6 +379,23 @@ export const updateOrderStatus = async (req, res) => {
     const { status } = req.body;
     const orderId = req.params.id;
     
+    console.log("Update order status:", { orderId, status });
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Status is required"
+      });
+    }
+    
+    const validStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status"
+      });
+    }
+    
     const order = await Order.findById(orderId);
     
     if (!order) {
@@ -429,29 +405,27 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
     
-    
     order.orderStatus = status;
     
-
     if (status === "delivered") {
       order.deliveredAt = new Date();
     } else if (status === "cancelled") {
       order.cancelledAt = new Date();
     }
     
-    const updatedOrder = await order.save();
+    await order.save();
     
     res.json({
       success: true,
       message: `Order status updated to ${status}`,
-      order: updatedOrder
+      order: order
     });
     
   } catch (error) {
     console.error("Update order status error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update order status"
+      message: error.message || "Failed to update order status"
     });
   }
 };
@@ -459,14 +433,22 @@ export const updateOrderStatus = async (req, res) => {
 
 export const cancelOrder = async (req, res) => {
   try {
-    const { reason } = req.body;
     const orderId = req.params.id;
     const userId = req.user?.id || req.user?._id;
+    const userRole = req.user?.role;
+    const { reason } = req.body;
     
-    const order = await Order.findOne({ 
-      _id: orderId, 
-      user: userId 
-    });
+    console.log("Cancel order request:", { orderId, userId, userRole, reason });
+    
+    // Build query based on role
+    let query = { _id: orderId };
+    
+    // If not admin, only allow cancellation of user's own orders
+    if (userRole !== "admin") {
+      query.user = userId;
+    }
+    
+    const order = await Order.findOne(query);
     
     if (!order) {
       return res.status(404).json({
@@ -475,32 +457,45 @@ export const cancelOrder = async (req, res) => {
       });
     }
     
-    
-    if (!["pending", "confirmed"].includes(order.orderStatus)) {
+    // Check if order can be cancelled
+    const cancellableStatuses = ["pending", "processing"];
+    if (!cancellableStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
         message: `Order cannot be cancelled in ${order.orderStatus} status`
       });
     }
     
-   
+    // Update order status
     order.orderStatus = "cancelled";
     order.cancelledAt = new Date();
-    order.cancelReason = reason;
+    if (reason) {
+      order.cancelReason = reason;
+    }
     
-    const updatedOrder = await order.save();
+    await order.save();
+    
+    // Restore product stock
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { stock: item.quantity } }
+        );
+      }
+    }
     
     res.json({
       success: true,
       message: "Order cancelled successfully",
-      order: updatedOrder
+      order: order
     });
     
   } catch (error) {
     console.error("Cancel order error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to cancel order"
+      message: error.message || "Failed to cancel order"
     });
   }
 };
@@ -521,7 +516,6 @@ export const getAllOrders = async (req, res) => {
     
     let query = {};
     
-    // Apply filters
     if (status && status !== "all") {
       query.orderStatus = status;
     }
@@ -545,7 +539,6 @@ export const getAllOrders = async (req, res) => {
     
     const total = await Order.countDocuments(query);
     
-  
     const revenueResult = await Order.aggregate([
       { $match: query },
       { $group: { _id: null, totalRevenue: { $sum: "$priceBreakdown.total" } } }
@@ -576,5 +569,3 @@ export const getAllOrders = async (req, res) => {
     });
   }
 };
-
-

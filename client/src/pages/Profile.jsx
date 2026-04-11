@@ -4,7 +4,11 @@ import axios from 'axios';
 import summaryApi from '../common/summartApi';
 import toast from 'react-hot-toast';
 import { setUser } from '../redux/userSlice';
-import { User, Mail, Phone, Edit, Save, X, Calendar } from 'lucide-react';
+import { 
+  User, Mail, Phone, Edit, Save, X, Calendar, 
+  ShoppingBag, MapPin, Shield, CheckCircle, 
+  AlertCircle, Camera, Award,Heart,Settings, TrendingUp 
+} from 'lucide-react';
 
 const Profile = () => {
   const user = useSelector((state) => state.user);
@@ -49,7 +53,6 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
-    
     if (!userData.name.trim()) {
       toast.error("Name is required");
       return;
@@ -68,7 +71,6 @@ const Profile = () => {
     try {
       setLoading(true);
       
-     
       const token = localStorage.getItem('token') || 
                     document.cookie.match(/accessToken=([^;]+)/)?.[1];
 
@@ -82,11 +84,8 @@ const Profile = () => {
       });
 
       if (res.data.success) {
-        
         const updatedUser = { ...user, ...userData };
         dispatch(setUser(updatedUser));
-        
-        
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
         toast.success("Profile updated successfully!");
@@ -104,95 +103,205 @@ const Profile = () => {
 
   if (!user?.id) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <User className="w-10 h-10 text-gray-400" />
+      <div className="min-h-screen flex items-center justify-center fade-in">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6">
+            <User className="w-12 h-12 text-text-muted" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Please login to view profile</h2>
-          <p className="text-gray-500">You need to be logged in to access your profile</p>
+          <h2 className="text-2xl font-display font-bold text-text mb-3">
+            Please Login
+          </h2>
+          <p className="text-text-muted mb-6">
+            You need to be logged in to access your profile
+          </p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="btn btn-primary"
+          >
+            Login to Your Account
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
-        
-        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-            <div className="flex items-center gap-4 mb-4 md:mb-0">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <span className="text-2xl font-bold text-white">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.name || 'User'}</h1>
-                <p className="text-gray-600 mt-1">{user.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    user.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {user.status || 'active'}
+    <div className="min-h-screen bg-bg p-4 md:p-6 lg:p-8 fade-in">
+      <div className="container-narrow">
+        {/* Profile Header Card */}
+        <div className="bg-card rounded-2xl shadow-lg overflow-hidden mb-6 gradient-border">
+          <div className="relative h-32 bg-gradient-primary">
+            {/* Cover Photo */}
+            <div className="absolute inset-0 bg-black/20"></div>
+            <button className="absolute right-4 bottom-4 p-2 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition">
+              <Camera size={18} />
+            </button>
+          </div>
+          
+          <div className="relative px-6 pb-6">
+            {/* Avatar */}
+            <div className="absolute -top-12 left-6">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-xl border-4 border-card">
+                  <span className="text-3xl font-bold text-white">
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
-                  {user.role && (
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {user.role}
+                </div>
+                <button className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-white hover:bg-primary-dark transition">
+                  <Camera size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Header Content */}
+            <div className="pt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-display font-bold text-text">
+                  {user.name || 'User'}
+                </h1>
+                <p className="text-text-muted mt-1">{user.email}</p>
+                <div className="flex items-center gap-2 mt-3">
+                  {user.verify_email ? (
+                    <span className="badge bg-green-100 text-green-700 flex items-center gap-1">
+                      <CheckCircle size={12} />
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="badge bg-yellow-100 text-yellow-700 flex items-center gap-1">
+                      <AlertCircle size={12} />
+                      Pending Verification
+                    </span>
+                  )}
+                  {user.role === 'admin' && (
+                    <span className="badge bg-gradient-primary text-white flex items-center gap-1">
+                      <Shield size={12} />
+                      Admin
+                    </span>
+                  )}
+                  {user.role === 'user' && (
+                    <span className="badge bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <User size={12} />
+                      Member
                     </span>
                   )}
                 </div>
               </div>
-            </div>
 
-            {!editMode ? (
-              <button
-                onClick={handleEdit}
-                className="btn btn-primary flex items-center gap-2 px-6 py-3"
-              >
-                <Edit size={18} />
-                Edit Profile
-              </button>
-            ) : (
-              <div className="flex gap-3">
+              {!editMode ? (
                 <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="btn btn-primary flex items-center gap-2 px-6 py-3 disabled:opacity-50"
+                  onClick={handleEdit}
+                  className="btn btn-primary flex items-center gap-2 px-6 py-3"
                 >
-                  {loading ? (
-                    <>
-                      <div className="spinner"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Save Changes
-                    </>
-                  )}
+                  <Edit size={18} />
+                  Edit Profile
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="btn btn-outline flex items-center gap-2 px-6 py-3"
-                >
-                  <X size={18} />
-                  Cancel
-                </button>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="btn btn-primary flex items-center gap-2 px-6 py-3 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="spinner w-4 h-4"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="btn btn-outline flex items-center gap-2 px-6 py-3"
+                  >
+                    <X size={18} />
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="stat-card hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="stat-label">Total Orders</p>
+                <p className="stat-number text-2xl">{user.orderHistory?.length || 0}</p>
               </div>
-            )}
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-primary" />
+              </div>
+            </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+          <div className="stat-card hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="stat-label">Saved Addresses</p>
+                <p className="stat-number text-2xl">{user.address_details?.length || 0}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-accent" />
+              </div>
+            </div>
+          </div>
+
+          <div className="stat-card hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="stat-label">Member Since</p>
+                <p className="text-lg font-semibold text-text">
+                  {user?.createdAt 
+                    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric'
+                      })
+                    : 'N/A'
+                  }
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <Award className="w-6 h-6 text-success" />
+              </div>
+            </div>
+          </div>
+
+          <div className="stat-card hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="stat-label">Total Spent</p>
+                <p className="stat-number text-2xl">
+                  ₹{(user.totalSpent || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-warning" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Details Card */}
+        <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-bg-alt">
+            <h2 className="text-xl font-display font-semibold text-text">Personal Information</h2>
+            <p className="text-text-muted text-sm">Manage your personal details and contact information</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column */}
               <div className="space-y-6">
                 <div>
-                  <label className="label flex items-center gap-2">
-                    <User size={16} />
+                  <label className="label flex items-center gap-2 mb-2">
+                    <User size={16} className="text-primary" />
                     Full Name
                   </label>
                   {editMode ? (
@@ -205,15 +314,15 @@ const Profile = () => {
                       placeholder="Enter your full name"
                     />
                   ) : (
-                    <div className="text-lg font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">
+                    <div className="text-text bg-bg-alt p-3 rounded-lg border border-border">
                       {user.name || 'Not provided'}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="label flex items-center gap-2">
-                    <Mail size={16} />
+                  <label className="label flex items-center gap-2 mb-2">
+                    <Mail size={16} className="text-primary" />
                     Email Address
                   </label>
                   {editMode ? (
@@ -226,17 +335,18 @@ const Profile = () => {
                       placeholder="Enter your email"
                     />
                   ) : (
-                    <div className="text-lg font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">
+                    <div className="text-text bg-bg-alt p-3 rounded-lg border border-border">
                       {user.email || 'Not provided'}
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* Right Column */}
               <div className="space-y-6">
                 <div>
-                  <label className="label flex items-center gap-2">
-                    <Phone size={16} />
+                  <label className="label flex items-center gap-2 mb-2">
+                    <Phone size={16} className="text-primary" />
                     Phone Number
                   </label>
                   {editMode ? (
@@ -250,18 +360,18 @@ const Profile = () => {
                       pattern="[0-9]{10}"
                     />
                   ) : (
-                    <div className="text-lg font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">
+                    <div className="text-text bg-bg-alt p-3 rounded-lg border border-border">
                       {user.mobile || 'Not added'}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="label flex items-center gap-2">
-                    <Calendar size={16} />
+                  <label className="label flex items-center gap-2 mb-2">
+                    <Calendar size={16} className="text-primary" />
                     Member Since
                   </label>
-                  <div className="text-lg font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">
+                  <div className="text-text bg-bg-alt p-3 rounded-lg border border-border">
                     {user?.createdAt 
                       ? new Date(user.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -274,59 +384,60 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Email Verification Notice */}
+            {!user.verify_email && (
+              <div className="mt-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-yellow-800">Email Not Verified</h4>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Please verify your email address to access all features and receive order updates.
+                    </p>
+                    <button className="mt-2 text-sm font-medium text-yellow-800 hover:text-yellow-900 underline">
+                      Resend Verification Email →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Orders</h3>
-              <span className="text-2xl font-bold text-primary">{user.orderHistory?.length || 0}</span>
-            </div>
-            <p className="text-sm text-gray-600">Total orders placed</p>
-            <button className="mt-4 text-primary hover:text-primary-dark text-sm font-medium">
-              View Order History →
-            </button>
-          </div>
-
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <button 
+            onClick={() => window.location.href = '/dashboard/myorder'}
+            className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition-all hover:-translate-y-1 text-center group"
+          >
+            <ShoppingBag className="w-6 h-6 mx-auto text-primary mb-2 group-hover:scale-110 transition" />
+            <span className="text-sm font-medium text-text">My Orders</span>
+          </button>
           
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Saved Addresses</h3>
-              <span className="text-2xl font-bold text-primary">{user.address_details?.length || 0}</span>
-            </div>
-            <p className="text-sm text-gray-600">Delivery addresses saved</p>
-            <button className="mt-4 text-primary hover:text-primary-dark text-sm font-medium">
-              Manage Addresses →
-            </button>
-          </div>
-
-        
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Account Status</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                user.verify_email 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {user.verify_email ? 'Verified' : 'Pending'}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">
-              {user.verify_email 
-                ? 'Your email is verified' 
-                : 'Please verify your email address'
-              }
-            </p>
-            {!user.verify_email && (
-              <button className="mt-4 text-primary hover:text-primary-dark text-sm font-medium">
-                Resend Verification →
-              </button>
-            )}
-          </div>
+          <button 
+            onClick={() => window.location.href = '/dashboard/address'}
+            className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition-all hover:-translate-y-1 text-center group"
+          >
+            <MapPin className="w-6 h-6 mx-auto text-accent mb-2 group-hover:scale-110 transition" />
+            <span className="text-sm font-medium text-text">Addresses</span>
+          </button>
+          
+          <button 
+            onClick={() => window.location.href = '/wishlist'}
+            className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition-all hover:-translate-y-1 text-center group"
+          >
+            <Heart className="w-6 h-6 mx-auto text-primary mb-2 group-hover:scale-110 transition" />
+            <span className="text-sm font-medium text-text">Wishlist</span>
+          </button>
+          
+          <button 
+            onClick={() => window.location.href = '/settings'}
+            className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition-all hover:-translate-y-1 text-center group"
+          >
+            <Settings className="w-6 h-6 mx-auto text-text-muted mb-2 group-hover:scale-110 transition" />
+            <span className="text-sm font-medium text-text">Settings</span>
+          </button>
         </div>
       </div>
     </div>

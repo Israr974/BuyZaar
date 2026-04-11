@@ -1,6 +1,8 @@
 
 
-export const baseUrl = "http://localhost:3030";
+export const baseUrl = "http://localhost:3000";
+
+// export const baseUrl ="https://buyzaar-1.onrender.com"
 
 const summaryApi = () => {
   return {
@@ -16,7 +18,7 @@ const summaryApi = () => {
     getUserDetail: { url: `${baseUrl}/api/user/me`, method: 'get' },/*------------- */
     logout: { url: `${baseUrl}/api/user/logout`, method: 'post' },
     updateUser: { url: `${baseUrl}/api/user/update`, method: 'put' },
-
+resendVerification: {  url: `${baseUrl}/api/user/resend-verification`,method: 'post'},
 
     // Category
     addCategory: { url: `${baseUrl}/api/category`, method: 'post' },
@@ -42,9 +44,9 @@ const summaryApi = () => {
 
     // Cart 
     addToCart: { url: `${baseUrl}/api/cart/add`, method: "post" },
-    getCartProducts: {url: `${baseUrl}/api/cart/`, method: "get"},
-    updateCartQuantity: {url: `${baseUrl}/api/cart/update`, method: "put"},
-    removeFromCart: { url: `${baseUrl}/api/cart/remove`, method: "delete"},
+    getCartProducts: { url: `${baseUrl}/api/cart/`, method: "get" },
+    updateCartQuantity: { url: `${baseUrl}/api/cart/update`, method: "put" },
+    removeFromCart: { url: `${baseUrl}/api/cart/remove`, method: "delete" },
     clearCart: { url: `${baseUrl}/api/cart/clear`, method: "delete" },
     getCartCount: { url: `${baseUrl}/api/cart/count`, method: "get" },
 
@@ -62,10 +64,25 @@ const summaryApi = () => {
     cancelOrder: (id) => ({ url: `${baseUrl}/api/orders/${id}/cancel`, method: 'put' }),
     updateDeliveryStatus: (id) => ({ url: `${baseUrl}/api/orders/${id}/status`, method: 'put' }),
     placeOrder: { url: `${baseUrl}/api/orders`, method: 'post' },
+    // Add this endpoint
+getAllOrders: { url: `${baseUrl}/api/orders`, method: 'get' },
+updateOrderStatus: (id) => ({ url: `${baseUrl}/api/orders/${id}/status`, method: 'put' }),
 
+    // Wishlist
+    addToWishlist: { url: `${baseUrl}/api/wishlist/add`, method: 'post' },
+    getWishlist: { url: `${baseUrl}/api/wishlist`, method: 'get' },
+    removeFromWishlist: { url: `${baseUrl}/api/wishlist/remove`, method: 'delete' },
+    clearWishlist: { url: `${baseUrl}/api/wishlist/clear`, method: 'delete' },
+
+    // Reviews
+    addReview: { url: `${baseUrl}/api/reviews`, method: 'post' },
+    getProductReviews: (productId) => ({ url: `${baseUrl}/api/reviews/product/${productId}`, method: 'get' }),
+    updateReview: (reviewId) => ({ url: `${baseUrl}/api/reviews/${reviewId}`, method: 'put' }),
+    deleteReview: (reviewId) => ({ url: `${baseUrl}/api/reviews/${reviewId}`, method: 'delete' }),
+    markReviewHelpful: (reviewId) => ({ url: `${baseUrl}/api/reviews/${reviewId}/helpful`, method: 'post' }),
     // Upload
     uploadImage: { url: `${baseUrl}/api/upload`, method: 'post' },
-    
+
   };
 };
 

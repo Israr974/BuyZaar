@@ -17,9 +17,11 @@ import {
   FaPercent,
   FaTag,
   FaFilter,
-  FaSync
+  FaSync,
+  FaArrowRight
 } from "react-icons/fa";
 import { GiReceiveMoney } from "react-icons/gi";
+import { ShoppingBag, TrendingUp, Sparkles, Clock } from "lucide-react";
 
 const ProductByCatOnProductPage = ({ categoryId }) => {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   const [sortBy, setSortBy] = useState("recommended");
   const [priceRange, setPriceRange] = useState([0, 100000]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const user = useSelector((state) => state.user);
   const cartitems = useSelector((state) => state.cart.cartitems);
@@ -58,10 +61,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      toast.error("Failed to load products", {
-        icon: "⚠️",
-        className: "glass",
-      });
+      toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -72,11 +72,8 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   };
 
   const handleQuickAddToCart = async (product) => {
-    if (!user?.token) {
-      toast.error("Please login to add items to cart", {
-        icon: "🔒",
-        className: "glass",
-      });
+    if (!user?.id) {
+      toast.error("Please login to add items to cart");
       navigate("/login");
       return;
     }
@@ -97,14 +94,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       });
 
       if (response.data.success) {
-        toast.success("Added to cart!", {
-          icon: "🛒",
-          className: "glass",
-          style: {
-            background: "linear-gradient(135deg, var(--color-primary), var(--color-accent))",
-            color: "white",
-          },
-        });
+        toast.success("Added to cart!");
       }
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -119,10 +109,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       toast.success("Removed from wishlist");
     } else {
       newWishlisted.add(productId);
-      toast.success("Added to wishlist", {
-        icon: "❤️",
-        className: "glass",
-      });
+      toast.success("Added to wishlist");
     }
     setWishlistedProducts(newWishlisted);
   };
@@ -141,7 +128,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
     }
     
     for (let i = fullStars; i < 5; i++) {
-      stars.push(<FaRegStar key={i} className="text-gray-300 text-xs" />);
+      stars.push(<FaRegStar key={i} className="text-border text-xs" />);
     }
     
     return stars;
@@ -150,12 +137,10 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   const applyFilters = () => {
     let result = [...products];
 
-    // Filter by price range
     result = result.filter(
       (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
     );
 
-    // Sort products
     switch (sortBy) {
       case "price-low":
         result.sort((a, b) => a.price - b.price);
@@ -189,18 +174,28 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
     applyFilters();
   }, [sortBy, priceRange, products]);
 
+  const getPriceRangeText = () => {
+    if (priceRange[1] >= 100000) return `₹${priceRange[0].toLocaleString()}+`;
+    return `₹${priceRange[0].toLocaleString()} - ₹${priceRange[1].toLocaleString()}`;
+  };
+
   if (loading) {
     return (
-      <div className="py-12">
-        <h2 className="text-2xl font-bold gradient-text mb-8">
-          Similar Products
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+      <div className="py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+          <h2 className="text-xl font-display font-bold text-text">
+            You May Also Like
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, index) => (
-            <div key={index} className="card animate-pulse">
-              <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl mb-4"></div>
-              <div className="h-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded mb-3"></div>
-              <div className="h-6 bg-gradient-to-r from-primary/20 to-accent/20 rounded w-3/4"></div>
+            <div key={index} className="bg-card rounded-xl border border-border animate-pulse">
+              <div className="aspect-square bg-bg-alt rounded-t-xl"></div>
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-bg-alt rounded w-3/4"></div>
+                <div className="h-4 bg-bg-alt rounded w-1/2"></div>
+              </div>
             </div>
           ))}
         </div>
@@ -209,89 +204,60 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   }
 
   if (products.length === 0) {
-    return (
-      <div className="py-12 text-center">
-        <div className="text-6xl mb-6 gradient-text">📦</div>
-        <h3 className="text-2xl font-bold text-text mb-3">
-          No Products Found
-        </h3>
-        <p className="text-text-muted mb-6">
-          Check back later for products in this category
-        </p>
-        <button
-          onClick={fetchProductsByCategory}
-          className="btn btn-outline inline-flex items-center gap-2"
-        >
-          <FaSync />
-          Refresh
-        </button>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="py-12">
+    <div className="py-8 fade-in">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h2 className="text-2xl font-bold gradient-text">
-            {category ? `More from ${category.name}` : "Similar Products"}
-          </h2>
-          <p className="text-text-muted mt-2">
-            {filteredProducts.length} products found
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+          <div>
+            <h2 className="text-xl font-display font-bold text-text">
+              {category ? `More from ${category.name}` : "You May Also Like"}
+            </h2>
+            <p className="text-xs text-text-muted mt-0.5">
+              {filteredProducts.length} products available
+            </p>
+          </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-wrap gap-4">
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="input bg-white pl-10 pr-8 cursor-pointer min-w-[180px]"
-            >
-              <option value="recommended">Recommended</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="discount">Best Discount</option>
-              <option value="rating">Top Rated</option>
-              <option value="newest">Newest First</option>
-            </select>
-            <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-          </div>
-
-          <div className="flex items-center gap-3 bg-white border border-border rounded-lg px-4 py-2">
-            <span className="text-text-muted text-sm">Price Range:</span>
-            <input
-              type="range"
-              min="0"
-              max="100000"
-              step="1000"
-              value={priceRange[0]}
-              onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-              className="w-32 accent-primary"
-            />
-            <span className="text-sm font-medium text-primary">
-              ₹{priceRange[0].toLocaleString()} - ₹{priceRange[1].toLocaleString()}
-            </span>
-          </div>
+        {/* Sort Dropdown */}
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="input py-2 pl-10 pr-8 text-sm cursor-pointer"
+          >
+            <option value="recommended">Recommended</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="discount">Best Discount</option>
+            <option value="rating">Top Rated</option>
+            <option value="newest">Newest First</option>
+          </select>
+          <TrendingUp size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
         </div>
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        {filteredProducts.map((product) => {
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {filteredProducts.slice(0, 12).map((product) => {
           const isInCart = checkInCart(product._id);
           const isWishlisted = wishlistedProducts.has(product._id);
           const isOutOfStock = product.stock === 0;
+          const discountPercent = product.discount > 0 
+            ? Math.round((product.discount / product.originalPrice) * 100) 
+            : 0;
 
           return (
             <div
               key={product._id}
-              className="card card-hover group relative overflow-hidden"
+              className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
               {/* Product Image */}
-              <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5">
+              <div className="relative aspect-square overflow-hidden bg-bg-alt cursor-pointer">
                 <img
                   src={product.image?.[0] || "/placeholder.png"}
                   alt={product.name}
@@ -300,64 +266,57 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
                 />
 
                 {/* Badges */}
-                <div className="absolute top-3 left-3 flex flex-col gap-2">
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
                   {product.discount > 0 && (
-                    <span className="badge badge-accent px-3 py-1 text-xs font-bold">
-                      <FaPercent className="mr-1" />
-                      {product.discount}% OFF
+                    <span className="bg-accent text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      -{discountPercent}%
                     </span>
                   )}
-                  {product.isFeatured && (
-                    <span className="badge bg-gradient-to-r from-primary to-accent text-white px-3 py-1 text-xs font-bold">
-                      <FaFire className="mr-1" />
-                      Featured
-                    </span>
-                  )}
-                  {isOutOfStock && (
-                    <span className="badge bg-red-100 text-red-800 px-3 py-1 text-xs font-bold">
-                      Out of Stock
+                  {product.stock > 0 && product.stock < 10 && (
+                    <span className="bg-warning text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      Only {product.stock} left
                     </span>
                   )}
                 </div>
 
                 {/* Quick Actions */}
-                <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <button
                     onClick={() => toggleWishlist(product._id)}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all ${
                       isWishlisted
-                        ? "bg-red-500 text-white animate-pulse"
-                        : "bg-white text-gray-700 hover:bg-red-50 hover:text-red-600"
+                        ? "bg-error text-white"
+                        : "bg-white text-text-muted hover:bg-error hover:text-white"
                     }`}
                   >
-                    <FaHeart className={isWishlisted ? "fill-current" : ""} />
+                    <FaHeart size={12} className={isWishlisted ? "fill-current" : ""} />
                   </button>
                   <button
                     onClick={() => handleProductClick(product)}
-                    className="w-9 h-9 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-lg hover:bg-primary hover:text-white transition-all duration-300"
+                    className="w-7 h-7 rounded-full bg-white text-text-muted flex items-center justify-center shadow-md hover:bg-primary hover:text-white transition-all"
                   >
-                    <FaEye />
+                    <FaEye size={12} />
                   </button>
                 </div>
 
-                {/* Quick Add to Cart */}
+                {/* Quick Add to Cart Overlay */}
                 {!isOutOfStock && (
                   <button
                     onClick={() => handleQuickAddToCart(product)}
-                    className={`absolute bottom-0 left-0 right-0 py-3 text-sm font-bold transition-all duration-300 transform translate-y-full group-hover:translate-y-0 ${
+                    className={`absolute bottom-0 left-0 right-0 py-2 text-xs font-medium transition-all duration-300 transform translate-y-full group-hover:translate-y-0 ${
                       isInCart
-                        ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                        : "bg-gradient-to-r from-primary to-accent text-white"
+                        ? "bg-success text-white"
+                        : "bg-gradient-primary text-white"
                     }`}
                   >
                     {isInCart ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <FaCheck />
+                      <span className="flex items-center justify-center gap-1">
+                        <FaCheck size={10} />
                         In Cart
                       </span>
                     ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <FaShoppingCart />
+                      <span className="flex items-center justify-center gap-1">
+                        <FaShoppingCart size={10} />
                         Quick Add
                       </span>
                     )}
@@ -366,72 +325,43 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
               </div>
 
               {/* Product Info */}
-              <div className="p-4">
+              <div className="p-3">
                 <h4
-                  className="text-sm font-semibold text-text line-clamp-2 mb-3 cursor-pointer hover:text-primary transition-colors"
+                  className="text-sm font-semibold text-text line-clamp-2 min-h-[40px] cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleProductClick(product)}
-                  title={product.name}
                 >
                   {product.name}
                 </h4>
 
                 {/* Rating */}
-                <div className="flex items-center mb-3">
-                  <div className="flex items-center mr-2">
-                    {renderStars(product.rating || 4.0)}
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="flex items-center gap-0.5">
+                    {renderStars(product.rating || 4)}
                   </div>
                   <span className="text-xs text-text-muted">
-                    ({product.reviewCount || "0"} reviews)
+                    ({product.reviewCount || 0})
                   </span>
                 </div>
 
                 {/* Price */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-baseline">
-                    <span className="text-xl font-bold gradient-text">
-                      ₹{product.price?.toLocaleString() || "0"}
+                <div className="mt-2">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-lg font-bold gradient-text">
+                      ₹{product.price?.toLocaleString()}
                     </span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-sm text-text-muted line-through ml-3">
-                        ₹{product.originalPrice.toLocaleString()}
+                      <span className="text-xs text-text-muted line-through">
+                        ₹{product.originalPrice?.toLocaleString()}
                       </span>
                     )}
                   </div>
-                  {product.discount > 0 && (
-                    <div className="flex items-center text-xs font-medium text-green-600">
-                      <GiReceiveMoney className="mr-2" />
-                      Save ₹
-                      {((product.originalPrice - product.price) || 0).toLocaleString()}
-                    </div>
-                  )}
                 </div>
 
-                {/* Delivery Info */}
-                <div className="flex items-center text-xs text-text-muted mb-3">
-                  <FaTruck className="mr-2" />
+                {/* Free Delivery Badge */}
+                <div className="flex items-center gap-1 mt-2 text-xs text-text-muted">
+                  <FaTruck size={10} />
                   <span>Free Delivery</span>
                 </div>
-
-                {/* Stock Status */}
-                {product.stock > 0 && product.stock < 10 && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="text-text-muted">Only {product.stock} left</span>
-                      <span className="text-accent font-bold flex items-center">
-                        <FaBolt className="mr-1" />
-                        Hurry!
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-accent to-red-500 h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min((product.stock / 10) * 100, 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -439,13 +369,14 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       </div>
 
       {/* View More Button */}
-      {category && (
-        <div className="text-center mt-12">
+      {filteredProducts.length > 12 && category && (
+        <div className="text-center mt-8">
           <button
             onClick={() => navigate(`/category/${category.slug || category._id}`)}
-            className="btn btn-primary px-10 py-3 text-lg font-semibold"
+            className="btn btn-outline px-6 py-2 rounded-lg flex items-center gap-2 mx-auto"
           >
-            View All Products in {category.name}
+            View All {filteredProducts.length} Products
+            <FaArrowRight size={12} />
           </button>
         </div>
       )}

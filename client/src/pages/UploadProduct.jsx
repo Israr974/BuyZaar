@@ -16,7 +16,11 @@ import {
   Layers,
   CheckCircle,
   Plus,
-  Trash2
+  Trash2,
+  AlertCircle,
+  Info,
+  Ruler,
+  Weight
 } from "lucide-react";
 
 const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
@@ -26,6 +30,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
   const [availableSubCategories, setAvailableSubCategories] = useState([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errors, setErrors] = useState({});
+  const [isFetching, setIsFetching] = useState(false);
 
   const [data, setData] = useState({
     name: "",
@@ -45,20 +51,45 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     dimensions: "",
   });
 
- 
+  const resetForm = () => {
+    setData({
+      name: "",
+      image: [],
+      category: "",
+      subCategory: [],
+      unit: "",
+      stock: "",
+      price: "",
+      discount: "",
+      description: "",
+      more_details: "",
+      publish: true,
+      sku: "",
+      brand: "",
+      weight: "",
+      dimensions: "",
+    });
+    setSelectedSubCategory("");
+    setErrors({});
+    setUploadProgress(0);
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setIsFetching(true);
         const res = await Axios(summaryApi().getAllCategory);
         setCategories(res.data?.data || []);
       } catch (error) {
         AxiosError(error);
+        toast.error("Failed to load categories");
+      } finally {
+        setIsFetching(false);
       }
     };
     fetchCategories();
   }, []);
 
-  
   useEffect(() => {
     const fetchSubCategories = async () => {
       try {
@@ -71,7 +102,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     fetchSubCategories();
   }, []);
 
-  
   useEffect(() => {
     if (!data.category) {
       setAvailableSubCategories([]);
@@ -81,16 +111,24 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       sub.category.some((c) => c._id === data.category)
     );
     setAvailableSubCategories(filtered);
+    setSelectedSubCategory("");
   }, [data.category, allSubCategories]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setData((prev) => ({ ...prev, [name]: value }));
+    setData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(file => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File ${file.name} is not an image`);
+        return false;
+      }
       if (file.size > 5 * 1024 * 1024) {
         toast.error(`File ${file.name} exceeds 5MB limit`);
         return false;
@@ -98,56 +136,92 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       return true;
     });
     
-    setData((prev) => ({ 
+    if (data.image.length + validFiles.length > 10) {
+      toast.error("Maximum 10 images allowed");
+      return;
+    }
+    
+    setData(prev => ({ 
       ...prev, 
-      image: [...prev.image, ...validFiles].slice(0, 10) // Limit to 10 images
+      image: [...prev.image, ...validFiles]
     }));
+    setErrors(prev => ({ ...prev, image: null }));
   };
 
   const removeImage = (index) => {
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       image: prev.image.filter((_, i) => i !== index),
     }));
   };
 
   const addSubCategory = () => {
-    if (!selectedSubCategory) return toast.error("Please select a subcategory");
+    if (!selectedSubCategory) {
+      toast.error("Please select a subcategory");
+      return;
+    }
     if (data.subCategory.includes(selectedSubCategory)) {
-      return toast.error("This subcategory is already added");
+      toast.error("This subcategory is already added");
+      return;
     }
     if (data.subCategory.length >= 5) {
-      return toast.error("Maximum 5 subcategories allowed");
+      toast.error("Maximum 5 subcategories allowed");
+      return;
     }
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       subCategory: [...prev.subCategory, selectedSubCategory],
     }));
     setSelectedSubCategory("");
+    setErrors(prev => ({ ...prev, subCategory: null }));
   };
 
   const removeSubCategory = (subCatId) => {
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       subCategory: prev.subCategory.filter((id) => id !== subCatId),
     }));
   };
 
   const validateForm = () => {
-    if (!data.name.trim()) return "Product name is required";
-    if (data.price <= 0) return "Price must be greater than 0";
-    if (data.stock < 0) return "Stock cannot be negative";
-    if (data.discount < 0 || data.discount > 100)
-      return "Discount must be between 0 and 100";
-    if (!data.category) return "Select a category";
-    if (!data.subCategory.length) return "Add at least one subcategory";
-    if (!data.image.length) return "Upload at least one image";
-    return null;
+    const newErrors = {};
+    
+    if (!data.name.trim()) newErrors.name = "Product name is required";
+    
+    const price = parseFloat(data.price);
+    if (!data.price || isNaN(price) || price <= 0) {
+      newErrors.price = "Price must be greater than 0";
+    }
+    
+    const stock = parseInt(data.stock);
+    if (data.stock === "" || isNaN(stock) || stock < 0) {
+      newErrors.stock = "Stock cannot be negative";
+    }
+    
+    const discount = parseFloat(data.discount);
+    if (data.discount && (isNaN(discount) || discount < 0 || discount > 100)) {
+      newErrors.discount = "Discount must be between 0 and 100";
+    }
+    
+    if (!data.category) newErrors.category = "Select a category";
+    if (data.subCategory.length === 0) newErrors.subCategory = "Add at least one subcategory";
+    if (data.image.length === 0) newErrors.image = "Upload at least one image";
+    if (!data.unit.trim()) newErrors.unit = "Unit is required";
+    if (!data.description.trim()) newErrors.description = "Description is required";
+    
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.keys(newErrors)[0];
+      const errorElement = document.getElementById(`error-${firstError}`);
+      errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
-    const errorMsg = validateForm();
-    if (errorMsg) return toast.error(errorMsg);
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
@@ -188,6 +262,9 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
         ...data,
         sub_category: data.subCategory,
         image: uploadedUrls,
+        price: parseFloat(data.price) || 0,
+        stock: parseInt(data.stock) || 0,
+        discount: parseFloat(data.discount) || 0,
       };
 
       const productRes = await Axios({
@@ -196,14 +273,18 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       });
 
       if (productRes.data.success) {
-        toast.success(" Product uploaded successfully!");
+        toast.success("Product uploaded successfully!");
+        resetForm();
         fetchProducts?.();
         onSuccess?.();
         onClose?.();
+      } else {
+        toast.error(productRes.data.message || "Failed to upload product");
       }
     } catch (error) {
+      console.error("Upload error:", error);
       AxiosError(error);
-      toast.error("Failed to upload product");
+      toast.error(error.response?.data?.message || "Failed to upload product");
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -213,199 +294,259 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
   const handleImageDrop = (e) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
-    handleFileChange({ target: { files } });
+    const validFiles = files.filter(file => file.type.startsWith("image/"));
+    if (validFiles.length) {
+      handleFileChange({ target: { files: validFiles } });
+    } else {
+      toast.error("Please drop image files only");
+    }
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
   };
 
+  const getSubCategoryName = (id) => {
+    const sub = allSubCategories.find(s => s._id === id);
+    return sub?.name || id;
+  };
+
+  if (isFetching && categories.length === 0) {
+    return (
+      <div className="w-full max-w-6xl p-8 flex justify-center items-center">
+        <div className="text-center">
+          <div className="spinner w-12 h-12 mb-4"></div>
+          <p className="text-text-muted">Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-6xl p-8">
-   
-      <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
+    <div className="w-full max-w-6xl p-6 md:p-8 overflow-y-auto max-h-[90vh] custom-scrollbar">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border bg-card z-10">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="text-2xl md:text-3xl font-display font-bold gradient-text">
             Add New Product
           </h2>
-          <p className="text-text-muted mt-2">
+          <p className="text-text-muted text-sm mt-1">
             Fill in the details below to add a new product to your catalog
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-text-muted hover:text-text"
+          className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
           disabled={loading}
         >
           <X size={24} />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-xl p-6 text-center">
+            <div className="spinner w-12 h-12 mb-4"></div>
+            <p className="text-text">Uploading product...</p>
+            <p className="text-text-muted text-sm mt-2">{Math.round(uploadProgress)}%</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
-          
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Tag className="text-primary" size={20} />
-              <h3 className="text-lg font-semibold text-text">Basic Information</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Product Name *</label>
-                <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter product name"
-                    value={data.name}
-                    onChange={handleChange}
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">SKU (Optional)</label>
-                <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="text"
-                    name="sku"
-                    placeholder="Product SKU"
-                    value={data.sku}
-                    onChange={handleChange}
-                    className="input pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">Brand (Optional)</label>
-                <input
-                  type="text"
-                  name="brand"
-                  placeholder="Brand name"
-                  value={data.brand}
-                  onChange={handleChange}
-                  className="input"
-                />
-              </div>
-              
-              <div>
-                <label className="label">Unit *</label>
-                <div className="relative">
-                  <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="text"
-                    name="unit"
-                    placeholder="e.g., kg, piece, liter"
-                    value={data.unit}
-                    onChange={handleChange}
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
 
-          
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="text-primary" size={20} />
-              <h3 className="text-lg font-semibold text-text">Pricing & Inventory</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="label">Price *</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="number"
-                    name="price"
-                    placeholder="0.00"
-                    value={data.price}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.01"
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">Discount (%)</label>
-                <div className="relative">
-                  <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="number"
-                    name="discount"
-                    placeholder="0-100"
-                    value={data.discount}
-                    onChange={handleChange}
-                    min="0"
-                    max="100"
-                    className="input pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">Stock Quantity *</label>
-                <div className="relative">
-                  <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-                  <input
-                    type="number"
-                    name="stock"
-                    placeholder="Available stock"
-                    value={data.stock}
-                    onChange={handleChange}
-                    min="0"
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">Status</label>
-                <select
-                  name="publish"
-                  value={data.publish}
-                  onChange={(e) =>
-                    setData((prev) => ({ ...prev, publish: e.target.value === "true" }))
-                  }
-                  className="input"
-                >
-                  <option value="true">Published</option>
-                  <option value="false">Draft</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          {/* Basic Information */}
+<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+    <Tag className="text-primary" size={20} />
+    <h3 className="text-lg font-semibold text-text">Basic Information</h3>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="label flex items-center gap-1">
+        Product Name <span className="text-error">*</span>
+      </label>
+      <div className="relative">
+        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+        <input
+          type="text"
+          name="name"
+          placeholder="Enter product name"
+          value={data.name}
+          onChange={handleChange}
+          className={`input pl-10 w-full ${errors.name ? 'border-error' : ''}`}
+        />
+      </div>
+      {errors.name && (
+        <p id="error-name" className="mt-1 text-xs text-error flex items-center gap-1">
+          <AlertCircle size={12} />
+          {errors.name}
+        </p>
+      )}
+    </div>
+    
+    <div>
+      <label className="label">SKU (Optional)</label>
+      <div className="relative">
+        <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+        <input
+          type="text"
+          name="sku"
+          placeholder="Enter SKU"
+          value={data.sku}
+          onChange={handleChange}
+          className="input pl-10 w-full"
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label className="label">Brand (Optional)</label>
+      <input
+        type="text"
+        name="brand"
+        placeholder="Enter brand name"
+        value={data.brand}
+        onChange={handleChange}
+        className="input w-full"
+      />
+    </div>
+    
+    <div>
+      <label className="label flex items-center gap-1">
+        Unit <span className="text-error">*</span>
+      </label>
+      <div className="relative">
+        <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+        <input
+          type="text"
+          name="unit"
+          placeholder="e.g., kg, piece, liter"
+          value={data.unit}
+          onChange={handleChange}
+          className={`input pl-10 w-full ${errors.unit ? 'border-error' : ''}`}
+        />
+      </div>
+      {errors.unit && (
+        <p className="mt-1 text-xs text-error flex items-center gap-1">
+          <AlertCircle size={12} />
+          {errors.unit}
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+{/* Pricing & Inventory */}
+<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+    <DollarSign className="text-primary" size={20} />
+    <h3 className="text-lg font-semibold text-text">Pricing & Inventory</h3>
+  </div>
+  
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {/* Price */}
+    <div>
+      <label className="label flex items-center gap-1">
+        Price <span className="text-error">*</span>
+      </label>
+      <div className="relative">
+        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
+        <input
+          type="text"
+          name="price"
+          placeholder="Enter price"
+          value={data.price}
+          onChange={handleChange}
+          className={`input w-full pl-8 ${errors.price ? 'border-error' : ''}`}
+          style={{ paddingLeft: '2rem' }}
+        />
+      </div>
+      {errors.price && (
+        <p className="mt-1 text-xs text-error">{errors.price}</p>
+      )}
+    </div>
+    
+    {/* Discount */}
+    <div>
+      <label className="label">Discount (%)</label>
+      <div className="relative">
+        <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
+        <input
+          type="text"
+          name="discount"
+          placeholder="Enter discount"
+          value={data.discount}
+          onChange={handleChange}
+          className={`input w-full pl-8 ${errors.discount ? 'border-error' : ''}`}
+          style={{ paddingLeft: '2rem' }}
+        />
+      </div>
+      {errors.discount && (
+        <p className="mt-1 text-xs text-error">{errors.discount}</p>
+      )}
+    </div>
+    
+    {/* Stock */}
+    <div>
+      <label className="label flex items-center gap-1">
+        Stock <span className="text-error">*</span>
+      </label>
+      <div className="relative">
+        <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
+        <input
+          type="text"
+          name="stock"
+          placeholder="Enter stock quantity"
+          value={data.stock}
+          onChange={handleChange}
+          className={`input w-full pl-8 ${errors.stock ? 'border-error' : ''}`}
+          style={{ paddingLeft: '2rem' }}
+        />
+      </div>
+      {errors.stock && (
+        <p className="mt-1 text-xs text-error">{errors.stock}</p>
+      )}
+    </div>
+    
+    {/* Status */}
+    <div>
+      <label className="label">Status</label>
+      <select
+        name="publish"
+        value={data.publish}
+        onChange={(e) =>
+          setData((prev) => ({ ...prev, publish: e.target.value === "true" }))
+        }
+        className="input w-full"
+      >
+        <option value="true">Published</option>
+        <option value="false">Draft</option>
+      </select>
+    </div>
+  </div>
+</div>
 
-          
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
+          {/* Categories */}
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <Layers className="text-primary" size={20} />
               <h3 className="text-lg font-semibold text-text">Categories</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="label">Main Category *</label>
+                <label className="label flex items-center gap-1">
+                  Main Category <span className="text-error">*</span>
+                </label>
                 <select
                   name="category"
                   value={data.category}
                   onChange={handleChange}
-                  className="input"
-                  required
+                  className={`input ${errors.category ? 'border-error' : ''}`}
                 >
                   <option value="">Select Category</option>
                   {categories.map((c) => (
@@ -414,10 +555,15 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                     </option>
                   ))}
                 </select>
+                {errors.category && (
+                  <p className="mt-1 text-xs text-error">{errors.category}</p>
+                )}
               </div>
               
               <div>
-                <label className="label">Sub-categories *</label>
+                <label className="label flex items-center gap-1">
+                  Sub-categories <span className="text-error">*</span>
+                </label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <select
@@ -426,7 +572,11 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                       className="input flex-1"
                       disabled={!data.category || availableSubCategories.length === 0}
                     >
-                      <option value="">Select Sub Category</option>
+                      <option value="">
+                        {!data.category ? "Select main category first" : 
+                         availableSubCategories.length === 0 ? "No subcategories available" : 
+                         "Select Sub Category"}
+                      </option>
                       {availableSubCategories.map((sc) => (
                         <option key={sc._id} value={sc._id}>
                           {sc.name}
@@ -443,57 +593,63 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                     </button>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {data.subCategory.map((subCatId) => {
-                      const subCat = allSubCategories.find((sc) => sc._id === subCatId);
-                      return (
-                        <div
-                          key={subCatId}
-                          className="badge-primary flex items-center gap-2 px-3 py-2"
+                  <div className="flex flex-wrap gap-2 mt-3 min-h-[60px]">
+                    {data.subCategory.map((subCatId) => (
+                      <div
+                        key={subCatId}
+                        className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-sm border border-primary/20"
+                      >
+                        <Grid3x3 size={12} />
+                        <span>{getSubCategoryName(subCatId)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSubCategory(subCatId)}
+                          className="hover:text-error transition-colors"
                         >
-                          <Grid3x3 size={14} />
-                          <span>{subCat?.name || subCatId}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeSubCategory(subCatId)}
-                            className="hover:text-red-500 transition-colors"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      );
-                    })}
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
                     {data.subCategory.length === 0 && (
                       <p className="text-text-muted text-sm">No sub-categories added yet</p>
                     )}
                   </div>
+                  {errors.subCategory && (
+                    <p className="text-xs text-error">{errors.subCategory}</p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
+          {/* Descriptions */}
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <CheckCircle className="text-primary" size={20} />
               <h3 className="text-lg font-semibold text-text">Descriptions</h3>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="label">Short Description *</label>
+                <label className="label flex items-center gap-1">
+                  Short Description <span className="text-error">*</span>
+                </label>
                 <textarea
                   name="description"
                   placeholder="Brief description of the product..."
                   value={data.description}
                   onChange={handleChange}
-                  className="input min-h-[100px]"
+                  className={`input min-h-[100px] ${errors.description ? 'border-error' : ''}`}
                   rows="3"
-                  required
                 />
-                <p className="text-xs text-text-muted mt-1">
-                  {data.description.length}/500 characters
-                </p>
+                <div className="flex justify-between mt-1">
+                  {errors.description && (
+                    <p className="text-xs text-error">{errors.description}</p>
+                  )}
+                  <span className={`text-xs ml-auto ${data.description.length > 450 ? 'text-error' : 'text-text-muted'}`}>
+                    {data.description.length}/500 characters
+                  </span>
+                </div>
               </div>
               
               <div>
@@ -511,19 +667,22 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           </div>
         </div>
 
-       
+        {/* Right Column - Images & Actions */}
         <div className="space-y-6">
-         
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
+          {/* Product Images */}
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <ImageIcon className="text-primary" size={20} />
-              <h3 className="text-lg font-semibold text-text">Product Images *</h3>
+              <h3 className="text-lg font-semibold text-text">Product Images</h3>
+              {errors.image && <span className="text-error text-xs ml-auto">* Required</span>}
             </div>
             
             <div
               onDrop={handleImageDrop}
               onDragOver={handleDragOver}
-              className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary transition-colors"
+              className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                errors.image ? 'border-error bg-error/5' : 'border-border hover:border-primary hover:bg-primary/5'
+              }`}
             >
               <Upload className="mx-auto text-text-muted mb-3" size={32} />
               <p className="text-text font-medium mb-2">Drop images here or click to upload</p>
@@ -550,32 +709,28 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
               </p>
             </div>
 
-            
             {uploadProgress > 0 && uploadProgress < 100 && (
               <div className="mt-4">
                 <div className="flex justify-between text-sm text-text-muted mb-1">
                   <span>Uploading images...</span>
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-bg-alt rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 rounded-full"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-           
             {data.image.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-text">Selected Images</h4>
-                  <span className="text-sm text-text-muted">
-                    First image will be featured
-                  </span>
+              <div className="mt-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-text">Selected Images</h4>
+                  <span className="text-xs text-text-muted">First image will be featured</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {data.image.map((file, index) => {
                     const src = typeof file === "string" ? file : URL.createObjectURL(file);
                     return (
@@ -583,19 +738,19 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                         <img
                           src={src}
                           alt="preview"
-                          className="h-24 w-full object-cover rounded-lg border border-border"
+                          className="h-20 w-full object-cover rounded-lg border border-border"
                         />
                         {index === 0 && (
-                          <div className="absolute top-1 left-1 bg-primary text-white px-2 py-1 rounded text-xs">
+                          <div className="absolute top-1 left-1 bg-primary text-white px-1.5 py-0.5 rounded text-xs">
                             Featured
                           </div>
                         )}
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={10} />
                         </button>
                       </div>
                     );
@@ -605,46 +760,47 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             )}
           </div>
 
-          
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="text-primary" size={20} />
-              <h3 className="text-lg font-semibold text-text">Specifications</h3>
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="label">Weight</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="weight"
-                    placeholder="e.g., 1.5 kg"
-                    value={data.weight}
-                    onChange={handleChange}
-                    className="input"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label">Dimensions</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="dimensions"
-                    placeholder="e.g., 10x5x3 inches"
-                    value={data.dimensions}
-                    onChange={handleChange}
-                    className="input"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          
-          <div className="card p-6">
+         {/* Specifications */}
+<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+    <Info className="text-primary" size={20} />
+    <h3 className="text-lg font-semibold text-text">Specifications</h3>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="label flex items-center gap-1">
+        <Weight size={14} />
+        Weight
+      </label>
+      <input
+        type="text"
+        name="weight"
+        placeholder="e.g., 1.5 kg"
+        value={data.weight}
+        onChange={handleChange}
+        className="input w-full"
+      />
+    </div>
+    
+    <div>
+      <label className="label flex items-center gap-1">
+        <Ruler size={14} />
+        Dimensions
+      </label>
+      <input
+        type="text"
+        name="dimensions"
+        placeholder="e.g., 10x5x3 inches"
+        value={data.dimensions}
+        onChange={handleChange}
+        className="input w-full"
+      />
+    </div>
+  </div>
+</div>
+          {/* Actions */}
+          <div className="bg-card rounded-xl border border-border p-5 sticky top-6">
             <h3 className="text-lg font-semibold text-text mb-4">Actions</h3>
             
             <div className="space-y-3">
@@ -656,7 +812,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
               >
                 {loading ? (
                   <>
-                    <div className="spinner border-white" />
+                    <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Uploading Product...
                   </>
                 ) : (
@@ -676,10 +832,10 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 Cancel
               </button>
               
-              <div className="text-xs text-text-muted pt-4 border-t border-border">
+              <div className="text-xs text-text-muted pt-3 border-t border-border">
                 <p className="flex items-center gap-1">
-                  <CheckCircle size={12} />
-                  Fields marked with * are required
+                  <CheckCircle size={12} className="text-success" />
+                  Fields marked with <span className="text-error">*</span> are required
                 </p>
               </div>
             </div>

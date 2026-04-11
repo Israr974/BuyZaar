@@ -3,6 +3,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import SubCategory from '../models/SubCategory.js';
+import Review from "../models/Review.js";
 
 
 export const searchProducts = async (req, res) => {
@@ -99,10 +100,30 @@ export const searchProducts = async (req, res) => {
     const categories = await Category.find().select('name').lean();
 
 
-    const enhancedProducts = products.map(product => ({
-      ...product,
-      finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
-    }));
+    // const enhancedProducts = products.map(product => ({
+    //   ...product,
+    //   finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
+    // }));
+
+// Get review counts for products
+
+const productIds = products.map(p => p._id);
+const reviewCounts = await Review.aggregate([
+  { $match: { product: { $in: productIds }, status: "approved" } },
+  { $group: { _id: "$product", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } }
+]);
+
+const reviewMap = {};
+reviewCounts.forEach(rc => {
+  reviewMap[rc._id] = { count: rc.count, avgRating: rc.avgRating };
+});
+
+const enhancedProducts = products.map(product => ({
+  ...product,
+  reviewCount: reviewMap[product._id]?.count || 0,
+  rating: reviewMap[product._id]?.avgRating ? parseFloat(reviewMap[product._id].avgRating.toFixed(1)) : 0,
+  finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
+}));
 
     res.json({
       success: true,

@@ -133,7 +133,7 @@ export const getCartProducts = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log(" Fetching cart for user:", userId);
+    
 
     const cartItems = await UserCartProduct.find({ userId })
       .populate("productId", "name price image stock discount originalPrice")
@@ -149,7 +149,7 @@ export const getCartProducts = async (req, res) => {
       updatedAt: item.updatedAt
     }));
 
-    console.log(` Found ${formattedCart.length} cart items`);
+    
 
     return res.status(200).json({
       success: true,

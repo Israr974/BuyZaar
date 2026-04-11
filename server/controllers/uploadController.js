@@ -1,4 +1,10 @@
+
+
 import cloudinary from "../config/cloudinary.js";
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+export const upload = multer({ storage });
 
 export const uploadImage = async (req, res) => {
   try {
@@ -12,7 +18,6 @@ export const uploadImage = async (req, res) => {
       });
     }
 
-    
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     if (!allowedTypes.includes(file.mimetype)) {
       return res.status(400).json({
@@ -31,11 +36,10 @@ export const uploadImage = async (req, res) => {
       });
     }
 
-
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: "categories", 
+          folder: "products",
           resource_type: "image",
           quality: "auto",
           fetch_format: "auto",
@@ -45,7 +49,6 @@ export const uploadImage = async (req, res) => {
           resolve(result);
         }
       );
-
       stream.end(file.buffer);
     });
 
@@ -54,11 +57,11 @@ export const uploadImage = async (req, res) => {
       success: true,
       error: false,
       imageUrl: result.secure_url,
-      public_id: result.public_id, 
+      public_id: result.public_id,
     });
 
   } catch (error) {
-    console.error(" Upload Error:", error);
+    console.error("Upload Error:", error);
     return res.status(500).json({
       message: error.message || "Image upload failed",
       success: false,

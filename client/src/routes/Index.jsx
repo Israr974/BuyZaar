@@ -14,10 +14,10 @@ import Profile from "../pages/Profile";
 import MyOrder from "../pages/MyOrder";
 import Address from "../pages/Address";
 import Category from "../pages/Category"
-import SubCategory from "../pages/subCategory"
+import SubCategory from "../pages/SubCategory"
 import UploadProduct from "../pages/UploadProduct"
 import ProductAdmin from "../pages/ProductAdmin"
-import { AdminPermission } from "../layout/AdminPermission";
+import { AdminPermission } from "../components/AdminPermission";
 import ProductList from "../pages/ProductList";
 import ProductDisplayPage from "../pages/ProductDisplayPage";
 import CheckOutPage from "../pages/CheckOutPage";
@@ -25,10 +25,18 @@ import DeliveryAddress from "../pages/DeliveryAddress";
 import CODPayment from "../pages/CODPayment";
 import CardPayment from "../pages/CardPayment";
 import UPIPayment from "../pages/UPIPayment";
-import PaymentSuccess from "../components/PaymentSuccess";
-import PaymentFail from "../components/PaymentFail";
+import PaymentSuccess from "../pages/PaymentSuccess";
+import PaymentFail from "../pages/PaymentFail";
 import Orders from "../pages/Orders";
 import RequireAuth from "../components/RequireAuth";
+import Wishlist from "../pages/Wishlist";
+import AboutUs from "../pages/AboutUs";
+import ContactUs from "../pages/ContactUs";
+import FAQ from "../pages/FAQ";
+import TermsAndConditions from "../pages/TermsAndConditions";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import ReturnPolicy from "../pages/ReturnPolicy";
+import ShippingInfo from "../pages/ShippingInfo";
 
 
 
@@ -69,50 +77,102 @@ const router = createBrowserRouter([{
             path: "user",
             element: <MobileUser />
         },
-        {
-            path: "dashboard",
-            element:
-
-                <RequireAuth><Dashboard /></RequireAuth>,
 
 
+        // {
+        //     path: "dashboard",
+        //     element:
 
-            children: [
-                {
-                    path: "profile",
-                    element: <Profile />
-                },
-                {
-                    path: "myorder",
-                    element: <MyOrder />
-                },
-                {
-                    path: "address",
-                    element: <Address />
-                },
-                {
-                    path: "category",
-                    element: <AdminPermission><Category /></AdminPermission>
-                },
-                {
-                    path: "order",
-                    element: <AdminPermission><Orders /></AdminPermission>
-                },
-                {
-                    path: "subcategory",
-                    element: <AdminPermission><SubCategory /></AdminPermission>
-                },
-                {
-                    path: "uploadproduct",
-                    element: <AdminPermission><UploadProduct /></AdminPermission>
-                },
-                {
-                    path: "product",
-                    element: <AdminPermission><ProductAdmin /></AdminPermission>
-                }
+        //         <RequireAuth><Dashboard /></RequireAuth>,
 
-            ]
-        },
+
+
+        //     children: [
+        //         {
+        //             path: "profile",
+        //             element: <Profile />
+        //         },
+        //         {
+        //             path: "myorder",
+        //             element: <MyOrder />
+        //         },
+        //         {
+        //             path: "address",
+        //             element: <Address />
+        //         },
+        //         {
+        //             path: "wishlist",
+        //             element: <Wishlist />
+        //         },
+        //         {
+        //             path: "category",
+        //             element: <AdminPermission><Category /></AdminPermission>
+        //         },
+        //         {
+        //             path: "order",
+        //             element: <AdminPermission><Orders /></AdminPermission>
+        //         },
+        //         {
+        //             path: "subcategory",
+        //             element: <AdminPermission><SubCategory /></AdminPermission>
+        //         },
+        //         {
+        //             path: "uploadproduct",
+        //             element: <AdminPermission><UploadProduct /></AdminPermission>
+        //         },
+        //         {
+        //             path: "product",
+        //             element: <AdminPermission><ProductAdmin /></AdminPermission>
+        //         }
+
+        //     ]
+        // },
+
+        // In router.jsx - Update the dashboard route
+
+{
+  path: "dashboard",
+  element: <RequireAuth><Dashboard /></RequireAuth>,  // No role required, just login
+  children: [
+    {
+      path: "profile",
+      element: <Profile />
+    },
+    {
+      path: "myorder",
+      element: <MyOrder />
+    },
+    {
+      path: "address",
+      element: <Address />
+    },
+    {
+      path: "wishlist",
+      element: <Wishlist />
+    },
+    // Admin only routes - use AdminPermission or AdminRoute
+    {
+      path: "category",
+      element: <AdminPermission><Category /></AdminPermission>
+    },
+    {
+      path: "order",
+      element: <AdminPermission><Orders /></AdminPermission>
+    },
+    {
+      path: "subcategory",
+      element: <AdminPermission><SubCategory /></AdminPermission>
+    },
+    {
+      path: "uploadproduct",
+      element: <AdminPermission><UploadProduct /></AdminPermission>
+    },
+    {
+      path: "product",
+      element: <AdminPermission><ProductAdmin /></AdminPermission>
+    }
+  ]
+},
         {
             path: ":category",
             children: [
@@ -159,7 +219,36 @@ const router = createBrowserRouter([{
         {
             path: "payment/fail",
             element: <PaymentFail />
-        }
+        },
+
+        {
+  path: "about",
+  element: <AboutUs />
+},
+{
+  path: "contact",
+  element: <ContactUs />
+},
+{
+  path: "faq",
+  element: <FAQ />
+},
+{
+  path: "terms",
+  element: <TermsAndConditions />
+},
+{
+  path: "privacy",
+  element: <PrivacyPolicy />
+},
+{
+  path: "return-policy",
+  element: <ReturnPolicy />
+},
+{
+  path: "shipping-info",
+  element: <ShippingInfo />
+}
 
 
 

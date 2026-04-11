@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema(
 
     image: [
       {
-        type: String, 
+        type: String,
         required: true
       }
     ],
@@ -74,7 +74,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
       unique: true,
-      sparse: true 
+      sparse: true
     },
 
     brand: {
@@ -88,7 +88,17 @@ const productSchema = new mongoose.Schema(
 
     dimensions: {
       type: String
-    }
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true
@@ -100,9 +110,9 @@ const productSchema = new mongoose.Schema(
 
 productSchema.index(
   { name: "text", description: "text" },
-  { 
+  {
     name: "product_text_search",
-    weights: { name: 10, description: 5 } 
+    weights: { name: 10, description: 5 }
   }
 );
 

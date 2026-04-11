@@ -4,79 +4,202 @@ import summaryApi from '../common/summartApi';
 import AxiosError from '../utils/AxiosToError';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
+import { Mail, ArrowRight, Shield, Lock, ChevronLeft } from 'lucide-react';
 
 const ForgotPassword = () => {
-    const navigate=useNavigate()
-  const [email, setEmail] = useState('');
+    const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    try {
-      const response = await Axios({
-        ...summaryApi().forgotPassword, 
-        data: { email }
-      });
+        if (!email.trim()) {
+            toast.error("Please enter your email address");
+            return;
+        }
 
-      const resData = response?.data;
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
 
-      if (resData?.success) {
-        toast.success(resData.message);
-        setEmail('');
-        navigate("/verify-otp")
-      } else if (resData?.error) {
-        toast.error(resData.message);
-      }
-    } catch (error) {
-      AxiosError(error);
-    }
+        setLoading(true);
 
-  };
+        try {
+            const response = await Axios({
+                ...summaryApi().forgotPassword,
+                data: { email }
+            });
 
-  return (
-    <section>
-      <div className="flex justify-center mt-5">
-        <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-lg">
-          <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">
-            Forgot Password
-          </h2>
-          <form className="grid gap-5" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block mb-1 font-medium text-gray-700">
-                Enter your registered email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
-                required
-                autoFocus
-              />
+            const resData = response?.data;
+
+            if (resData?.success) {
+                toast.success(resData.message || "OTP sent to your email!", {
+                    duration: 4000,
+                });
+                setEmail('');
+                navigate("/verify-otp", { 
+                    state: { email: email } 
+                });
+            } else if (resData?.error) {
+                toast.error(resData.message || "Failed to send OTP");
+            }
+        } catch (error) {
+            AxiosError(error);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-[82.4vh] flex items-center justify-center px-4 py-8 fade-in">
+            <div className="w-full max-w-md">
+                {/* Brand Logo */}
+                <div className="text-center mb-6">
+                    <Link to="/" className="inline-flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-2xl font-bold gradient-text">BuyZaar</span>
+                    </Link>
+                </div>
+
+                {/* Forgot Password Card */}
+                <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
+                    <div className="p-8">
+                        {/* Header */}
+                        <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                                <Mail className="w-8 h-8 text-primary" />
+                            </div>
+                            <h2 className="text-2xl font-display font-bold text-text">
+                                Forgot Password?
+                            </h2>
+                            <p className="text-sm text-text-muted mt-2">
+                                Enter your registered email address and we'll send you an OTP to reset your password.
+                            </p>
+                        </div>
+
+                        {/* Form */}
+                        <form className="space-y-5" onSubmit={handleSubmit}>
+                            <div>
+                                <label className="block text-sm font-semibold text-text mb-2">
+                                    Email Address
+                                </label>
+                                <div className="relative group">
+                                    <Mail
+                                        size={18}
+                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors group-focus-within:text-primary"
+                                        style={{ color: "var(--color-text-muted)" }}
+                                    />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="john@example.com"
+                                        className="input pl-10 py-3 w-full"
+                                        autoFocus
+                                        required
+                                    />
+                                </div>
+                                <p className="text-xs text-text-muted mt-2">
+                                    We'll send a 6-digit OTP to this email address
+                                </p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={!email || loading}
+                                className={`w-full py-3 rounded-xl font-semibold text-white transition-all duration-300 flex items-center justify-center gap-2 group ${
+                                    email && !loading
+                                        ? 'btn-primary'
+                                        : 'bg-gray-300 cursor-not-allowed'
+                                }`}
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Sending OTP...
+                                    </>
+                                ) : (
+                                    <>
+                                        Send OTP
+                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+
+                        {/* Divider */}
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t" style={{ borderColor: "var(--color-border)" }}></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs">
+                                <span className="px-2 bg-card" style={{ color: "var(--color-text-muted)" }}>
+                                    Remember your password?
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Login Link */}
+                        <Link
+                            to="/login"
+                            className="w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 border-2"
+                            style={{
+                                borderColor: "var(--color-primary)",
+                                color: "var(--color-primary)",
+                                backgroundColor: "transparent"
+                            }}
+                        >
+                            <ChevronLeft size={18} />
+                            Back to Login
+                        </Link>
+                    </div>
+
+                    {/* Footer Note */}
+                    <div
+                        className="px-8 py-4 text-center text-xs"
+                        style={{
+                            backgroundColor: "var(--color-bg-alt)",
+                            borderTop: "1px solid var(--color-border)",
+                            color: "var(--color-text-muted)"
+                        }}
+                    >
+                        <div className="flex items-center justify-center gap-4">
+                            <span className="flex items-center gap-1">
+                                <Shield size={12} />
+                                Secure
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <Lock size={12} />
+                                Encrypted
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Help Text */}
+                <p className="text-center text-xs text-text-muted mt-6">
+                    Didn't receive the OTP? Check your spam folder or{" "}
+                    <button 
+                        onClick={() => {
+                            if (email) handleSubmit(new Event('submit'));
+                            else toast.error("Please enter your email first");
+                        }}
+                        className="text-primary hover:underline"
+                    >
+                        try again
+                    </button>
+                </p>
             </div>
-
-            <button
-              type="submit"
-              disabled={!email}
-              className={`w-full py-3 mt-2 rounded-lg font-semibold text-white transition duration-200 ${
-                email ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-300 cursor-not-allowed'
-              }`}
-            >
-              Send Otp
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-600 mt-5">
-            Remembered your password?
-            <Link to="/login" className="text-blue-600 font-semibold ml-1 hover:underline">
-              Login
-            </Link>
-          </p>
         </div>
-      </div>
-    </section>
-  );
+    );
 };
 
 export default ForgotPassword;

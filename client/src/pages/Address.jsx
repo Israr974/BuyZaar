@@ -1,12 +1,11 @@
-
 import React, { useEffect, useState } from "react";
 import Axios from "../utils/Axios";
 import summaryApi from "../common/summartApi";
 import { 
   MapPin, Plus, Edit2, Trash2, Home, 
-  Building, Navigation, Phone, User,
+  Building, Phone, User,
   Building2, Package, Globe, Shield,
-  Clock, Truck
+  Clock, Truck, CheckCircle
 } from "lucide-react";
 import ConfirmBox from "../components/ConfirmBox";
 import DeliveryAddress from "./DeliveryAddress";
@@ -22,7 +21,6 @@ const Address = () => {
 
   const token = localStorage.getItem("token");
 
- 
   const fetchAddresses = async () => {
     try {
       setLoading(true);
@@ -46,7 +44,6 @@ const Address = () => {
     fetchAddresses();
   }, []);
 
-  
   const handleDeleteAddress = async (id) => {
     try {
       const res = await Axios({
@@ -65,7 +62,6 @@ const Address = () => {
     }
   };
 
- 
   const getAddressTypeConfig = (type) => {
     switch (type?.toLowerCase()) {
       case "home":
@@ -73,74 +69,55 @@ const Address = () => {
           icon: <Home size={20} />,
           text: "Home",
           bg: "bg-green-50",
-          border: "border-green-200",
           iconColor: "text-green-600",
-          badgeColor: "badge-success"
+          badgeColor: "bg-green-100 text-green-700"
         };
       case "office":
         return {
           icon: <Building2 size={20} />,
           text: "Office",
           bg: "bg-blue-50",
-          border: "border-blue-200",
           iconColor: "text-blue-600",
-          badgeColor: "badge-primary"
+          badgeColor: "bg-blue-100 text-blue-700"
         };
       case "other":
         return {
           icon: <Package size={20} />,
           text: "Other",
           bg: "bg-purple-50",
-          border: "border-purple-200",
           iconColor: "text-purple-600",
-          badgeColor: "badge-accent"
+          badgeColor: "bg-purple-100 text-purple-700"
         };
       default:
         return {
           icon: <MapPin size={20} />,
           text: "Address",
           bg: "bg-gray-50",
-          border: "border-gray-200",
           iconColor: "text-gray-600",
-          badgeColor: "badge-primary"
+          badgeColor: "bg-gray-100 text-gray-700"
         };
     }
   };
 
-  
   const filteredAddresses = addresses.filter(addr => {
     if (activeFilter === 'all') return true;
     return addr.address_type?.toLowerCase() === activeFilter;
   });
 
-  
+  const stats = {
+    total: addresses.length,
+    home: addresses.filter(a => a.address_type?.toLowerCase() === 'home').length,
+    office: addresses.filter(a => a.address_type?.toLowerCase() === 'office').length,
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-bg p-6 md:p-8 fade-in">
         <div className="container-narrow">
-          <div className="animate-pulse space-y-8">
-            <div className="flex items-center justify-between">
-              <div className="space-y-3">
-                <div className="h-10 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-lg w-64"></div>
-                <div className="h-4 bg-gray-200 rounded w-48"></div>
-              </div>
-              <div className="h-14 bg-gray-200 rounded-xl w-48"></div>
-            </div>
-
-            <div className="flex gap-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-12 bg-gray-200 rounded-lg w-24"></div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div 
-                  key={i} 
-                  className="h-80 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shadow-sm"
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                ></div>
-              ))}
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="spinner w-12 h-12 mb-4"></div>
+              <p className="text-text-muted">Loading your addresses...</p>
             </div>
           </div>
         </div>
@@ -148,79 +125,64 @@ const Address = () => {
     );
   }
 
- 
-  const stats = {
-    total: addresses.length,
-    home: addresses.filter(a => a.address_type?.toLowerCase() === 'home').length,
-    office: addresses.filter(a => a.address_type?.toLowerCase() === 'office').length,
-  };
-
   return (
-    <div className="min-h-screen bg-bg p-4 md:p-8 fade-in">
+    <div className="min-h-screen bg-bg p-4 md:p-6 lg:p-8 fade-in">
       <div className="container-narrow">
-       
-        <div className="mb-10">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-display font-bold gradient-text mb-3">
-                My Addresses
-              </h1>
-              <p className="text-text-muted text-lg">
-                Manage your delivery addresses for faster checkout
-              </p>
-            </div>
-            <button
-              onClick={() => setOpenAddress(true)}
-              className="btn btn-primary flex items-center gap-3 group"
-            >
-              <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-              Add New Address
-            </button>
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-text">
+              My Addresses
+            </h1>
           </div>
+          <p className="text-text-muted ml-4">
+            Manage your delivery addresses for faster checkout
+          </p>
+        </div>
 
-         
-         
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="card p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <MapPin className="w-7 h-7 text-primary" />
-                </div>
-                <div>
-                  <p className="text-text-muted text-sm">Total Addresses</p>
-                  <p className="text-3xl font-bold text-text">{stats.total}</p>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Total Addresses</p>
+                <p className="text-2xl font-bold gradient-text">{stats.total}</p>
               </div>
-            </div>
-
-            <div className="card p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
-                  <Home className="w-7 h-7 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-text-muted text-sm">Home Addresses</p>
-                  <p className="text-3xl font-bold text-text">{stats.home}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Building className="w-7 h-7 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-text-muted text-sm">Office Addresses</p>
-                  <p className="text-3xl font-bold text-text">{stats.office}</p>
-                </div>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-primary" />
               </div>
             </div>
           </div>
 
-          
-          
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Home Addresses</p>
+                <p className="text-2xl font-bold gradient-text">{stats.home}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <Home className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-text-muted text-sm">Office Addresses</p>
+                <p className="text-2xl font-bold gradient-text">{stats.office}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <Building className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-card rounded-xl border border-border">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setActiveFilter('all')}
               className={`btn ${activeFilter === 'all' ? 'btn-primary' : 'btn-outline'} px-5 py-2.5`}
@@ -243,26 +205,32 @@ const Address = () => {
               Office
             </button>
           </div>
+          
+          <button
+            onClick={() => setOpenAddress(true)}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Add New Address
+          </button>
         </div>
 
-        
-        
+        {/* Addresses Grid */}
         {filteredAddresses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAddresses.map((addr) => {
               const config = getAddressTypeConfig(addr.address_type);
 
               return (
                 <div
                   key={addr._id}
-                  className="card card-hover"
+                  className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
-                  <div className="p-6">
-                    
-                    
+                  <div className="p-5">
+                    {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-3 rounded-lg ${config.bg}`}>
+                        <div className={`p-2.5 rounded-lg ${config.bg}`}>
                           <div className={config.iconColor}>
                             {config.icon}
                           </div>
@@ -271,87 +239,80 @@ const Address = () => {
                           <h3 className="font-semibold text-text">
                             {addr.name || "My Address"}
                           </h3>
-                          <div className="mt-1">
-                            <span className={`badge ${config.badgeColor}`}>
-                              {config.text}
-                            </span>
-                          </div>
+                          <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${config.badgeColor}`}>
+                            {config.text}
+                          </span>
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <button
                           onClick={() => setAddressToEdit(addr)}
-                          className="p-2 hover:bg-primary/10 rounded-lg transition"
+                          className="p-1.5 hover:bg-primary/10 rounded-lg transition"
                           title="Edit address"
                         >
-                          <Edit2 size={18} className="text-text-muted hover:text-primary" />
+                          <Edit2 size={16} className="text-text-muted hover:text-primary" />
                         </button>
                         <button
                           onClick={() => setAddressToDelete(addr._id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition"
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition"
                           title="Delete address"
                         >
-                          <Trash2 size={18} className="text-text-muted hover:text-red-600" />
+                          <Trash2 size={16} className="text-text-muted hover:text-red-600" />
                         </button>
                       </div>
                     </div>
 
-                    
-                    <div className="space-y-4 mb-6">
-                      <div className="flex items-start gap-3">
-                        <MapPin size={18} className="text-text-muted mt-1 flex-shrink-0" />
+                    {/* Address Details */}
+                    <div className="space-y-3 mb-5">
+                      <div className="flex items-start gap-2">
+                        <MapPin size={16} className="text-text-muted mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-text">{addr.address_line}</p>
-                          <p className="text-sm text-text-muted">
+                          <p className="text-sm text-text">{addr.address_line}</p>
+                          <p className="text-xs text-text-muted">
                             {addr.city}, {addr.state} - {addr.pincode}
                           </p>
-                          <p className="text-sm text-text-muted">{addr.country}</p>
+                          <p className="text-xs text-text-muted">{addr.country}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <User size={16} className="text-text-muted flex-shrink-0" />
-                        <span className="text-sm text-text">{addr.name}</span>
+                      <div className="flex items-center gap-2">
+                        <User size={14} className="text-text-muted" />
+                        <span className="text-sm text-text-muted">{addr.name}</span>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <Phone size={16} className="text-text-muted flex-shrink-0" />
-                        <span className="text-sm text-text">{addr.mobile}</span>
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className="text-text-muted" />
+                        <span className="text-sm text-text-muted">{addr.mobile}</span>
                       </div>
                     </div>
 
-                    
-                    <div className="pt-4 border-t border-border">
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            toast.success("Address selected for delivery");
-                          }}
-                          className="btn btn-primary flex-1"
-                        >
-                          <Truck size={16} className="mr-2" />
-                          Use This Address
-                        </button>
-                      </div>
-                    </div>
+                    {/* Action Button */}
+                    <button
+                      onClick={() => {
+                        toast.success("Address selected for delivery");
+                      }}
+                      className="w-full btn btn-primary py-2 text-sm flex items-center justify-center gap-2"
+                    >
+                      <Truck size={14} />
+                      Deliver to this Address
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          
-          
-          <div className="card p-12 text-center">
+          // Empty State
+          <div className="bg-card rounded-xl border border-border p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-8 animate-float">
-                <MapPin className="w-16 h-16 text-primary" />
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6">
+                <MapPin className="w-12 h-12 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-text mb-4">
+              <h2 className="text-2xl font-display font-bold text-text mb-3">
                 No Addresses Found
               </h2>
-              <p className="text-text-muted mb-8">
+              <p className="text-text-muted mb-6">
                 {activeFilter === 'all' 
                   ? "You haven't added any addresses yet. Add your first address to get started."
                   : `No ${activeFilter} addresses found. Try adding one or check other filters.`
@@ -359,24 +320,23 @@ const Address = () => {
               </p>
               <button
                 onClick={() => setOpenAddress(true)}
-                className="btn btn-primary px-8 py-4"
+                className="btn btn-primary px-6 py-3"
               >
-                <Plus size={20} className="mr-3" />
+                <Plus size={18} className="mr-2" />
                 Add New Address
               </button>
             </div>
           </div>
         )}
 
-        
-        
+        {/* Security Note */}
         {addresses.length > 0 && (
-          <div className="card p-6 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Shield className="w-8 h-8 text-blue-600" />
+          <div className="mt-8 p-5 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Shield className="w-5 h-5 text-primary" />
               </div>
-              <div className="flex-1">
+              <div>
                 <h3 className="font-semibold text-text mb-1">Address Security</h3>
                 <p className="text-sm text-text-muted">
                   Your addresses are securely stored and only used for delivery purposes. 
@@ -387,41 +347,8 @@ const Address = () => {
           </div>
         )}
 
-        
-        
-        {(openAddress || addressToEdit) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DeliveryAddress
-                onClose={() => {
-                  setOpenAddress(false);
-                  setAddressToEdit(null);
-                }}
-                refreshAddresses={fetchAddresses}
-                addressToEdit={addressToEdit}
-              />
-            </div>
-          </div>
-        )}
-
-        
-        
-        {addressToDelete && (
-          <ConfirmBox
-            title="Delete Address"
-            message="Are you sure you want to delete this address? This action cannot be undone."
-            confirmText="Delete"
-            cancelText="Cancel"
-            confirmColor="red"
-            close={() => setAddressToDelete(null)}
-            cancel={() => setAddressToDelete(null)}
-            confirm={() => handleDeleteAddress(addressToDelete)}
-          />
-        )}
-
-        
-        
-        <div className="text-center text-text-muted text-sm mt-12">
+        {/* Sync Info */}
+        <div className="mt-6 text-center text-text-muted text-sm">
           <p className="flex items-center justify-center gap-2">
             <Clock size={14} />
             Addresses are synced across all your devices
@@ -431,6 +358,36 @@ const Address = () => {
           </p>
         </div>
       </div>
+
+      {/* Add/Edit Address Modal */}
+      {(openAddress || addressToEdit) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DeliveryAddress
+              onClose={() => {
+                setOpenAddress(false);
+                setAddressToEdit(null);
+              }}
+              refreshAddresses={fetchAddresses}
+              addressToEdit={addressToEdit}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {addressToDelete && (
+        <ConfirmBox
+          title="Delete Address"
+          message="Are you sure you want to delete this address? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirmColor="red"
+          close={() => setAddressToDelete(null)}
+          cancel={() => setAddressToDelete(null)}
+          confirm={() => handleDeleteAddress(addressToDelete)}
+        />
+      )}
     </div>
   );
 };

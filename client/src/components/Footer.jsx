@@ -1,63 +1,284 @@
 import React from "react";
-import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
-import logo from "../assets/logo2.png";
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter, FaYoutube } from "react-icons/fa";
+import { MapPin, Phone, Mail, Clock, CreditCard, Truck, Shield, Headphones } from "lucide-react";
+import { validateUrlConverter } from "../utils/validateUrl";
+
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+  const categories = useSelector((state) => state.product.allCategory);
+
+  const quickLinks = [
+    { name: "About Us", path: "/about" },
+    { name: "Contact Us", path: "/contact" },
+    { name: "FAQs", path: "/faq" },
+    { name: "Privacy Policy", path: "/privacy" },
+    { name: "Terms & Conditions", path: "/terms" },
+    { name: "Return Policy", path: "/return-policy" },
+    { name: "Shipping Info", path: "/shipping-info" },
+  ];
+
+  const shopLinks = [
+    { name: "New Arrivals", path: "/search?q=new" },
+    { name: "Best Sellers", path: "/search?q=best" },
+    { name: "Sale", path: "/search?q=sale" },
+    { name: "Wishlist", path: "/dashboard/wishlist" },
+    { name: "Track Order", path: "/dashboard/myorder" },
+  ];
+
+  const services = [
+    { icon: Truck, text: "Free Shipping", subtext: "On orders over ₹999" },
+    { icon: Shield, text: "Secure Payment", subtext: "100% secure transactions" },
+    { icon: Headphones, text: "24/7 Support", subtext: "Dedicated customer care" },
+    { icon: CreditCard, text: "Easy Returns", subtext: "30 days return policy" },
+  ];
+
   return (
-    <footer className="bg-white border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <footer className="bg-card border-t border-border mt-auto">
+      {/* Services Section */}
+      <div className="border-b border-border">
+        <div className="container-wide py-8 px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {services.map((service, index) => (
+              <div key={index} className="flex items-center gap-3 group">
+                <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <service.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-text">{service.text}</p>
+                  <p className="text-xs text-text-muted">{service.subtext}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer */}
+      <div className="container-wide py-12 px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           
-          <div className="md:col-span-2">
-            <img src={logo} alt="Logo" className="w-32 mb-4" />
-            <p className="text-gray-600 mb-4">
-              Your one-stop destination for quality products and exceptional service.
+          {/* Brand Column */}
+          <div className="lg:col-span-1">
+            <Link to="/" className="flex items-center gap-2 mb-4">
+             
+              <h2 className="text-2xl font-bold gradient-text">BuyZaar</h2>
+            </Link>
+            <p className="text-text-muted text-sm mb-4 leading-relaxed">
+              Your one-stop destination for quality products and exceptional service. 
+              Shop with confidence and experience the best online shopping.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-all">
-                <FaFacebook size={18} />
+            <div className="flex gap-3">
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-bg-alt flex items-center justify-center text-text-muted hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Facebook"
+              >
+                <FaFacebook size={16} />
               </a>
-              <a href="#" className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-pink-50 hover:text-pink-500 transition-all">
-                <FaInstagram size={18} />
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-bg-alt flex items-center justify-center text-text-muted hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Instagram"
+              >
+                <FaInstagram size={16} />
               </a>
-              <a href="#" className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-blue-100 hover:text-blue-700 transition-all">
-                <FaLinkedin size={18} />
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-bg-alt flex items-center justify-center text-text-muted hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Twitter"
+              >
+                <FaTwitter size={16} />
+              </a>
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-bg-alt flex items-center justify-center text-text-muted hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="LinkedIn"
+              >
+                <FaLinkedin size={16} />
+              </a>
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-bg-alt flex items-center justify-center text-text-muted hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="YouTube"
+              >
+                <FaYoutube size={16} />
               </a>
             </div>
           </div>
 
-          
+          {/* Quick Links */}
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Quick Links</h4>
+            <h3 className="font-semibold text-text mb-4 text-lg">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-600 hover:text-primary transition-colors">Shop</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-primary transition-colors">Contact</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-primary transition-colors">FAQ</a></li>
+              {quickLinks.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    to={link.path}
+                    className="text-text-muted hover:text-primary transition-colors text-sm flex items-center gap-2 group"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary/0 group-hover:bg-primary transition-all"></span>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          
+          {/* Shop */}
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Contact</h4>
-            <ul className="space-y-2 text-gray-600">
-              <li>support@buyzaar.com</li>
-              <li>6397378896</li>
-              <li>Aligarh</li>
+            <h3 className="font-semibold text-text mb-4 text-lg">Shop</h3>
+            <ul className="space-y-2">
+              {shopLinks.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    to={link.path}
+                    className="text-text-muted hover:text-primary transition-colors text-sm flex items-center gap-2 group"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary/0 group-hover:bg-primary transition-all"></span>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Categories - FIXED with dynamic paths */}
+          <div>
+            <h3 className="font-semibold text-text mb-4 text-lg">Categories</h3>
+            <ul className="space-y-2">
+              {categories && categories.length > 0 ? (
+                categories.slice(0, 6).map((category) => (
+                  <li key={category._id}>
+                    <Link
+                      to={`/${validateUrlConverter(category.name)}-${category._id}/all-all`}
+                      className="text-text-muted hover:text-primary transition-colors text-sm flex items-center gap-2 group"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-primary/0 group-hover:bg-primary transition-all"></span>
+                      {category.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="text-text-muted text-sm">Loading categories...</li>
+              )}
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="font-semibold text-text mb-4 text-lg">Get in Touch</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <MapPin size={18} className="text-text-muted mt-0.5 flex-shrink-0" />
+                <span className="text-text-muted text-sm">Maulana Azad Nagar Jamalpur, Aligarh, UP 202001</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone size={18} className="text-text-muted flex-shrink-0" />
+                <a href="tel:+916397378896" className="text-text-muted hover:text-primary text-sm transition-colors">
+                  +91 63973 78896
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail size={18} className="text-text-muted flex-shrink-0" />
+                <a href="mailto:support@buyzaar.com" className="text-text-muted hover:text-primary text-sm transition-colors">
+                  support@buyzaar.com
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Clock size={18} className="text-text-muted flex-shrink-0" />
+                <span className="text-text-muted text-sm">Mon - Sat: 9AM - 9PM</span>
+              </li>
             </ul>
           </div>
         </div>
 
-        
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-gray-200">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} All Rights Reserved
-          </p>
-          <div className="flex gap-4 text-sm text-gray-500">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Cookies</a>
+        {/* Newsletter Section */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+              <h3 className="font-semibold text-text text-lg">Subscribe to Our Newsletter</h3>
+              <p className="text-text-muted text-sm mt-1">Get the latest updates on new products and upcoming sales</p>
+            </div>
+            <div className="flex w-full md:w-auto gap-3">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="input py-2 px-4 text-sm flex-1 md:w-72"
+                aria-label="Email for newsletter"
+              />
+              <button className="btn btn-primary whitespace-nowrap px-6">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-8 pt-6 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-text-muted text-sm text-center md:text-left">
+              © {currentYear} BuyZaar. All rights reserved. | Designed with ❤️ for premium shopping
+            </p>
+            <div className="flex gap-6 text-sm">
+              <Link to="/privacy" className="text-text-muted hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-text-muted hover:text-primary transition-colors">
+                Terms of Use
+              </Link>
+              <Link to="/sitemap" className="text-text-muted hover:text-primary transition-colors">
+                Sitemap
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      <div className="border-t border-border bg-bg-alt">
+        <div className="container-wide px-6 py-4">
+          <div className="flex flex-wrap justify-center items-center gap-6">
+            <span className="text-xs text-text-muted">Secure payments by:</span>
+            <div className="flex gap-3">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/9/98/Visa_Inc._logo_%282005%E2%80%932014%29.svg" 
+                alt="Visa" 
+                className="h-6 object-contain"
+              />
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" 
+                alt="Mastercard" 
+                className="h-6 object-contain"
+              />
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" 
+                alt="PayPal" 
+                className="h-6 object-contain"
+              />
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" 
+                alt="American Express" 
+                className="h-6 object-contain"
+              />
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/archive/d/d1/20111124065039%21RuPay.svg" 
+                alt="RuPay" 
+                className="h-6 object-contain"
+              />
+            </div>
           </div>
         </div>
       </div>

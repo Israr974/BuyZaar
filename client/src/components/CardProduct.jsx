@@ -6,30 +6,34 @@ import Axios from "../utils/Axios";
 import summaryApi from "../common/summartApi";
 import toast from "react-hot-toast";
 import { setCartItems } from "../redux/cartSlice";
+import { addToWishlist, removeFromWishlist } from "../redux/wishlistSlice";
 import { IoIosLock, IoIosStar } from "react-icons/io";
 import { TiShoppingCart } from "react-icons/ti";
+import { Heart, Eye, ShoppingBag, CheckCircle } from "lucide-react";
 
-
-
-const CardProduct = ({ product }) => {
+const CardProduct = ({ product, viewMode = "grid" }) => {
   const url = `/product/${validateUrlConverter(product.name)}-${product._id}`;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-
-
   const cartitems = useSelector((state) => state.cart.cartitems);
-
-
+  const wishlistItems = useSelector((state) => state.wishlist?.items || []);
   const cartItem = Array.isArray(cartitems)
     ? cartitems.find((item) => item.productId?._id === product._id)
     : null;
-
   const quantityInCart = cartItem?.quantity || 0;
 
-
   const user = useSelector((state) => state.user);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Check if product is in wishlist when component mounts or wishlist changes
+  useEffect(() => {
+    const inWishlist = wishlistItems.some(
+      (item) => item.productId === product._id || item._id === product._id
+    );
+    setIsWishlisted(inWishlist);
+  }, [wishlistItems, product._id]);
 
   const isAuthenticated = () => {
     const token = localStorage.getItem('token');
@@ -39,7 +43,6 @@ const CardProduct = ({ product }) => {
       try {
         const parsedUser = JSON.parse(storedUser);
         const hasUserId = !!(parsedUser.id || parsedUser._id || parsedUser.email);
-
         return hasUserId;
       } catch (error) {
         console.error("Error parsing localStorage user:", error);
@@ -48,24 +51,22 @@ const CardProduct = ({ product }) => {
     }
 
     const hasReduxUser = !!(user?.id || user?.email);
-
     return hasReduxUser;
   };
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
     const isAuth = isAuthenticated();
 
-
     if (!isAuth) {
       toast.error("Please login to add items to cart!", {
-        icon: <IoIosLock />,
         duration: 3000,
         style: {
-          background: 'linear-gradient(to right, var(--color-primary), var(--color-primary-dark))',
+          background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
           color: '#fff',
-          borderRadius: '10px',
+          borderRadius: '12px',
         },
       });
       navigate('/login', {
@@ -91,15 +92,14 @@ const CardProduct = ({ product }) => {
 
       if (res.data.success) {
         toast.success("Added to cart!", {
-          icon: <TiShoppingCart />,
+          icon: <TiShoppingCart size={18} />,
           duration: 2000,
           style: {
-            background: 'linear-gradient(to right, #10B981, #059669)',
+            background: 'linear-gradient(135deg, #10B981, #059669)',
             color: '#fff',
-            borderRadius: '10px',
+            borderRadius: '12px',
           },
         });
-
 
         const cartRes = await Axios({
           ...summaryApi().getCartProducts
@@ -112,25 +112,18 @@ const CardProduct = ({ product }) => {
         toast.error(res.data.message || "Failed to add to cart");
       }
     } catch (error) {
-
-
       if (error.response?.status === 401) {
         toast.error("Session expired. Please login again.", {
-          icon: "⚠️",
           duration: 4000,
           style: {
-            background: 'linear-gradient(to right, #F59E0B, #D97706)',
+            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
             color: '#fff',
-            borderRadius: '10px',
+            borderRadius: '12px',
           },
         });
-
-
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('refreshToken');
-
-
         navigate('/login', {
           state: {
             from: window.location.pathname,
@@ -145,100 +138,267 @@ const CardProduct = ({ product }) => {
     }
   };
 
+  const handleWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated()) {
+      toast.error("Please login to add to wishlist");
+      navigate('/login');
+      return;
+    }
+
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        const response = await Axios({
+          ...summaryApi().removeFromWishlist,
+          data: { productId: product._id },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        
+        if (response.data.success) {
+          dispatch(removeFromWishlist(product._id));
+          setIsWishlisted(false);
+          toast.success("Removed from wishlist");
+        } else {
+          toast.error(response.data.message || "Failed to remove from wishlist");
+        }
+      } else {
+        // Add to wishlist
+        const response = await Axios({
+          ...summaryApi().addToWishlist,
+          data: { productId: product._id },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        
+        if (response.data.success) {
+          dispatch(addToWishlist({ productId: product._id, product: product }));
+          setIsWishlisted(true);
+          toast.success("Added to wishlist");
+        } else {
+          // If product already in wishlist, update UI
+          if (response.data?.message === "Product already in wishlist") {
+            setIsWishlisted(true);
+            dispatch(addToWishlist({ productId: product._id, product: product }));
+            toast.success("Product already in wishlist");
+          } else {
+            toast.error(response.data.message || "Failed to add to wishlist");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Wishlist error:", error);
+      
+      // Handle "already in wishlist" error from backend
+      if (error.response?.data?.message === "Product already in wishlist") {
+        setIsWishlisted(true);
+        dispatch(addToWishlist({ productId: product._id, product: product }));
+        toast.success("Product already in wishlist");
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Something went wrong");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const authStatus = isAuthenticated();
+  const discountPercent = product.discount ? Math.round((product.discount / product.originalPrice) * 100) : 0;
 
+  // List view mode
+  if (viewMode === "list") {
+    return (
+      <div className="block bg-card rounded-xl border border-border hover:shadow-lg transition-all duration-300 group overflow-hidden">
+        <Link to={url} className="flex flex-col sm:flex-row">
+          <div className="relative w-full sm:w-48 h-48 flex-shrink-0 overflow-hidden bg-bg-alt">
+            <img
+              src={product.image?.[0] || "/placeholder.png"}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            {product.discount > 0 && (
+              <div className="absolute top-2 left-2 bg-gradient-to-r from-accent to-accent-dark text-white text-xs font-bold px-2 py-1 rounded-full">
+                -{discountPercent}%
+              </div>
+            )}
+            {product.stock === 0 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white font-bold text-xs bg-red-500 px-2 py-1 rounded-full">
+                  Out of Stock
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1 p-4">
+            <h3 className="text-lg font-semibold text-text hover:text-primary transition-colors line-clamp-1">
+              {product.name}
+            </h3>
+            
+            {product.rating && (
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <IoIosStar
+                      key={i}
+                      className={`text-sm ${i < Math.floor(product.rating) ? 'text-accent' : 'text-border'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-text-muted">{product.rating.toFixed(1)}</span>
+                <span className="text-xs text-text-muted">({product.reviewCount || 0} reviews)</span>
+              </div>
+            )}
+            
+            <p className="text-text-muted text-sm mt-2 line-clamp-2">
+              {product.description || "No description available"}
+            </p>
+            
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-2xl font-bold gradient-text">
+                ₹{product.price?.toLocaleString()}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-sm text-text-muted line-through">
+                  ₹{product.originalPrice?.toLocaleString()}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+                className={`flex-1 btn ${product.stock === 0 ? 'btn-disabled' : 'btn-primary'} py-2 text-sm flex items-center justify-center gap-2`}
+              >
+                {quantityInCart > 0 ? (
+                  <>
+                    <CheckCircle size={16} />
+                    In Cart ({quantityInCart})
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag size={16} />
+                    Add to Cart
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleWishlist}
+                disabled={isProcessing}
+                className="p-2 rounded-lg border border-border hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+              >
+                <Heart size={18} className={isWishlisted ? "fill-accent text-accent" : ""} />
+              </button>
+            </div>
+          </div>
+        </Link>
+      </div>
+    );
+  }
 
+  // Grid view mode (original)
   return (
-    <div className="block border border-border rounded-xl p-4 bg-card shadow-sm hover:shadow-lg transition-all duration-300 h-full group hover:-translate-y-1">
-
-      <Link
-        to={url}
-        className="block"
-      >
-        <div className="relative overflow-hidden rounded-lg mb-3">
+    <div className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
+      <Link to={url} className="block relative overflow-hidden">
+        <div className="relative aspect-square bg-bg-alt">
           <img
             src={product.image?.[0] || "/placeholder.png"}
             alt={product.name}
-            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
-          {product.discount && (
-            <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-              -{product.discount}%
+          
+          {/* Discount Badge */}
+          {product.discount > 0 && (
+            <div className="absolute top-2 left-2 bg-gradient-to-r from-accent to-accent-dark text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+              -{discountPercent}%
             </div>
           )}
+          
+          {/* Out of Stock Overlay */}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg backdrop-blur-sm">
-              <span className="text-white font-bold text-sm bg-red-500/90 px-3 py-1.5 rounded-full">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-white font-semibold text-sm bg-red-500/90 px-3 py-1.5 rounded-full">
                 Out of Stock
               </span>
             </div>
           )}
+          
+          {/* Quick Action Buttons */}
+          <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-3 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+                className="flex-1 bg-white text-text hover:bg-primary hover:text-white rounded-lg py-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
+              >
+                {quantityInCart > 0 ? (
+                  <>
+                    <CheckCircle size={14} />
+                    In Cart ({quantityInCart})
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag size={14} />
+                    Add to Cart
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleWishlist}
+                disabled={isProcessing}
+                className="w-9 h-9 bg-white rounded-lg hover:bg-accent hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
+              >
+                <Heart size={16} className={isWishlisted ? "fill-accent text-accent" : ""} />
+              </button>
+            </div>
+          </div>
         </div>
-        <h3 className="text-base font-semibold text-gray-800 truncate group-hover:text-primary transition-colors duration-200">
-          {product.name}
-        </h3>
-        <div className="flex items-center gap-2 mt-2">
-          <p className="text-lg font-bold text-gray-900">₹{product.price}</p>
-          {product.originalPrice && product.originalPrice > product.price && (
-            <p className="text-sm text-gray-500 line-through">
-              ₹{product.originalPrice}
-            </p>
+        
+        <div className="p-3">
+          <h3 className="font-semibold text-text text-sm line-clamp-2 min-h-[40px] group-hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+          
+          {/* Rating */}
+          {product.rating && (
+            <div className="flex items-center gap-1 mt-1">
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <IoIosStar
+                    key={i}
+                    className={`text-xs ${i < Math.floor(product.rating) ? 'text-accent' : 'text-border'}`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-text-muted">({product.reviewCount || 0})</span>
+            </div>
+          )}
+          
+          {/* Price */}
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-lg font-bold gradient-text">
+              ₹{product.price?.toLocaleString()}
+            </span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-xs text-text-muted line-through">
+                ₹{product.originalPrice?.toLocaleString()}
+              </span>
+            )}
+          </div>
+          
+          {/* Stock Status */}
+          {product.stock > 0 && product.stock < 10 && (
+            <p className="text-xs text-warning mt-1">Only {product.stock} left!</p>
           )}
         </div>
-        {product.rating && (
-          <div className="flex items-center gap-1 mt-2">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <span
-                  key={i}
-                  className={`text-sm ${i < Math.floor(product.rating) ? 'text-amber-500' : 'text-gray-300'}`}
-                >
-                  <IoIosStar />
-                </span>
-              ))}
-            </div>
-            <span className="text-xs text-gray-600 ml-1 font-medium">
-              {product.rating.toFixed(1)}
-            </span>
-            <span className="text-xs text-gray-400">
-              ({product.reviewCount || 0})
-            </span>
-          </div>
-        )}
       </Link>
-
-
-      <div className="mt-4">
-        {product.stock === 0 ? (
-          <button
-            disabled
-            className="w-full h-10 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed text-sm font-medium border border-gray-200"
-          >
-            Out of Stock
-          </button>
-        ) : (
-          <button
-            onClick={handleAddToCart}
-            className={`w-full h-10 rounded-lg text-white transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg ${authStatus
-                ? quantityInCart > 0
-                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                  : "bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary"
-                : "bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600"
-              }`}
-            title={authStatus ? "" : "Please login to add to cart"}
-          >
-
-            {authStatus
-              ? quantityInCart > 0
-                ? <span className="inline-flex items-center gap-1">In Cart: {quantityInCart}</span>
-                : <span className="inline-flex items-center gap-1"><TiShoppingCart size={20} /> Add to Cart</span>
-              : <span className="inline-flex items-center gap-1"><IoIosLock size={20} /> Login to Add</span>}
-          </button>
-        )}
-
-
-      </div>
     </div>
   );
 };

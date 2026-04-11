@@ -16,7 +16,10 @@ import {
   Globe,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  CheckCircle,
+  ShoppingBag
 } from "lucide-react";
 import Axios from "../utils/Axios";
 import AxiosError from "../utils/AxiosToError";
@@ -44,24 +47,21 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     publish: true,
   });
 
-  
   useEffect(() => {
     const fetchProductById = async () => {
       if (!productId) return;
       
       try {
         setProductLoading(true);
-       
         const response = await Axios({
           ...summaryApi().getProductById(),
-          data: { productId:productId } 
+          data: { productId: productId } 
         });
         
         if (response.data.success) {
           const productData = response.data.data;
           setProduct(productData);
           
-         
           setData({
             name: productData.name || "",
             image: productData.image || [],
@@ -104,7 +104,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     fetchCategories();
   }, []);
 
-  
   useEffect(() => {
     if (!data.category) return setSubCategories([]);
     const fetchSubCategories = async () => {
@@ -156,7 +155,14 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.keys(newErrors)[0];
+      const errorElement = document.getElementById(`error-${firstError}`);
+      errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    return true;
   };
 
   const handleChange = (e) => {
@@ -172,18 +178,19 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       return;
     }
 
-    files.forEach(file => {
+    const validFiles = files.filter(file => {
       if (!file.type.startsWith("image/")) {
-        toast.error("Only image files (JPG, PNG, GIF, WebP) are allowed");
-        return;
+        toast.error(`File ${file.name} is not an image`);
+        return false;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size must be less than 5MB");
-        return;
+        toast.error(`File ${file.name} exceeds 5MB limit`);
+        return false;
       }
+      return true;
     });
 
-    setData((prev) => ({ ...prev, image: [...prev.image, ...files] }));
+    setData((prev) => ({ ...prev, image: [...prev.image, ...validFiles] }));
     setErrors(prev => ({ ...prev, image: null }));
   };
 
@@ -201,7 +208,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       setLoading(true);
       const uploadedUrls = [];
 
-     
       for (let file of data.image) {
         if (typeof file === "string") {
           uploadedUrls.push(file);
@@ -242,9 +248,8 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       });
 
       if (res.data.success) {
-        toast.success(" Product updated successfully");
+        toast.success("Product updated successfully! 🎉");
         
-
         if (onSuccess) {
           onSuccess();
         } else {
@@ -265,46 +270,45 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
   if (productLoading) {
     return (
-      <section className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4">
+      <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-card rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 border border-border">
           <Loader2 size={32} className="animate-spin text-primary" />
           <p className="text-text">Loading product details...</p>
         </div>
-      </section>
+      </div>
     );
   }
 
-  
   if (!product) {
     return (
-      <section className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4">
-          <XCircle size={48} className="text-red-500" />
-          <h3 className="text-xl font-bold text-text">Product Not Found</h3>
+      <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-card rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-md text-center border border-border">
+          <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+            <XCircle size={32} className="text-error" />
+          </div>
+          <h3 className="text-xl font-display font-bold text-text">Product Not Found</h3>
           <p className="text-text-muted">The product you're trying to edit doesn't exist.</p>
-          <button
-            onClick={onClose}
-            className="btn-outline px-6 py-2.5 rounded-xl mt-4"
-          >
+          <button onClick={onClose} className="btn btn-primary px-6 py-2.5 rounded-xl mt-2">
             Close
           </button>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
-      >
-       
-        <div className="sticky top-0 z-10 bg-white border-b p-6">
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col border border-border">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-card border-b border-border p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Update Product
-              </h2>
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                <h2 className="text-2xl font-display font-bold gradient-text">
+                  Update Product
+                </h2>
+              </div>
               <p className="text-sm text-text-muted mt-1">
                 Edit product details for "{product?.name || 'Product'}"
               </p>
@@ -312,24 +316,23 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
             <button
               onClick={onClose}
               disabled={loading}
-              aria-label="Close modal"
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-text-muted hover:text-text disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text disabled:opacity-50"
             >
               <X size={20} />
             </button>
           </div>
         </div>
 
-       
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           
-            <div className="space-y-6">
-             
+            {/* Left Column */}
+            <div className="space-y-5">
+              {/* Product Name */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <Package size={16} />
-                  Product Name <span className="text-red-500">*</span>
+                  <Package size={16} className="text-primary" />
+                  Product Name <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"
@@ -338,29 +341,29 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   value={data.name}
                   onChange={handleChange}
                   disabled={loading}
-                  className={`input w-full ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className={`input w-full ${errors.name ? 'border-error' : ''}`}
                 />
                 {errors.name && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                    <XCircle size={14} />
+                  <p id="error-name" className="mt-1 text-xs text-error flex items-center gap-1">
+                    <AlertCircle size={12} />
                     {errors.name}
                   </p>
                 )}
               </div>
 
-              
+              {/* Category & Subcategory */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Layers size={16} />
-                    Category <span className="text-red-500">*</span>
+                    <Layers size={16} className="text-primary" />
+                    Category <span className="text-error">*</span>
                   </label>
                   <select
                     name="category"
                     value={data.category}
                     onChange={handleChange}
                     disabled={loading}
-                    className={`input w-full ${errors.category ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input w-full ${errors.category ? 'border-error' : ''}`}
                   >
                     <option value="">Select Category</option>
                     {categories.map((c) => (
@@ -370,8 +373,8 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     ))}
                   </select>
                   {errors.category && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
+                    <p className="mt-1 text-xs text-error flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.category}
                     </p>
                   )}
@@ -379,15 +382,15 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Tag size={16} />
-                    Subcategory <span className="text-red-500">*</span>
+                    <Tag size={16} className="text-primary" />
+                    Subcategory <span className="text-error">*</span>
                   </label>
                   <select
                     name="subCategory"
                     value={data.subCategory}
                     onChange={handleChange}
                     disabled={loading || !data.category}
-                    className={`input w-full ${errors.subCategory ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input w-full ${errors.subCategory ? 'border-error' : ''}`}
                   >
                     <option value="">
                       {data.category ? "Select Subcategory" : "Select category first"}
@@ -399,20 +402,20 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     ))}
                   </select>
                   {errors.subCategory && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
+                    <p className="mt-1 text-xs text-error flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.subCategory}
                     </p>
                   )}
                 </div>
               </div>
 
-              
+              {/* Price, Discount, Stock */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <DollarSign size={16} />
-                    Price <span className="text-red-500">*</span>
+                    <DollarSign size={16} className="text-primary" />
+                    Price <span className="text-error">*</span>
                   </label>
                   <input
                     type="number"
@@ -421,21 +424,18 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     value={data.price}
                     onChange={handleChange}
                     disabled={loading}
-                    className={`input w-full ${errors.price ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input w-full ${errors.price ? 'border-error' : ''}`}
                     min="0"
                     step="0.01"
                   />
                   {errors.price && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
-                      {errors.price}
-                    </p>
+                    <p className="mt-1 text-xs text-error">{errors.price}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Percent size={16} />
+                    <Percent size={16} className="text-primary" />
                     Discount %
                   </label>
                   <input
@@ -445,22 +445,19 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     value={data.discount}
                     onChange={handleChange}
                     disabled={loading}
-                    className={`input w-full ${errors.discount ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input w-full ${errors.discount ? 'border-error' : ''}`}
                     min="0"
                     max="100"
                   />
                   {errors.discount && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
-                      {errors.discount}
-                    </p>
+                    <p className="mt-1 text-xs text-error">{errors.discount}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Hash size={16} />
-                    Stock <span className="text-red-500">*</span>
+                    <Hash size={16} className="text-primary" />
+                    Stock <span className="text-error">*</span>
                   </label>
                   <input
                     type="number"
@@ -469,23 +466,20 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     value={data.stock}
                     onChange={handleChange}
                     disabled={loading}
-                    className={`input w-full ${errors.stock ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input w-full ${errors.stock ? 'border-error' : ''}`}
                     min="0"
                   />
                   {errors.stock && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
-                      {errors.stock}
-                    </p>
+                    <p className="mt-1 text-xs text-error">{errors.stock}</p>
                   )}
                 </div>
               </div>
 
-             
+              {/* Unit & Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Package size={16} />
+                    <Package size={16} className="text-primary" />
                     Unit
                   </label>
                   <input
@@ -501,119 +495,113 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Globe size={16} />
+                    <Globe size={16} className="text-primary" />
                     Status
                   </label>
                   <select
                     name="publish"
                     value={data.publish}
-                    onChange={(e) =>
-                      setData((prev) => ({ ...prev, publish: e.target.value === "true" }))
-                    }
+                    onChange={(e) => setData((prev) => ({ ...prev, publish: e.target.value === "true" }))}
                     disabled={loading}
                     className="input w-full"
                   >
                     <option value="true">
-                      <span className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <Eye size={14} />
                         Published
-                      </span>
+                      </div>
                     </option>
                     <option value="false">
-                      <span className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <EyeOff size={14} />
                         Unpublished
-                      </span>
+                      </div>
                     </option>
                   </select>
                 </div>
               </div>
             </div>
 
-           
-            <div className="space-y-6">
-              
+            {/* Right Column */}
+            <div className="space-y-5">
+              {/* Product Images */}
               <div>
-                <label className="label flex items-center gap-2">
-                  <ImageIcon size={16} />
-                  Product Images <span className="text-red-500">*</span>
-                  <span className="text-xs text-text-muted ml-auto">
+                <label className="label flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon size={16} className="text-primary" />
+                    Product Images <span className="text-error">*</span>
+                  </div>
+                  <span className="text-xs text-text-muted">
                     ({data.image.length}/10 images)
                   </span>
                 </label>
 
                 <div className="space-y-4">
-                 
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileChange}
-                      disabled={loading}
-                      className="hidden"
-                      id="product-images"
-                    />
-                    <label
-                      htmlFor="product-images"
-                      className="flex items-center justify-center gap-2 border-2 border-dashed border-border hover:border-primary transition-colors rounded-xl p-6 cursor-pointer hover:bg-gray-50/50"
-                    >
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Upload className="text-primary" size={20} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-text">
-                          Click to upload images
-                        </p>
-                        <p className="text-xs text-text-muted">
-                          JPG, PNG, WebP up to 5MB each
-                        </p>
-                      </div>
-                    </label>
-                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={loading}
+                    className="hidden"
+                    id="product-images-update"
+                  />
+                  <label
+                    htmlFor="product-images-update"
+                    className="flex items-center justify-center gap-3 border-2 border-dashed border-border hover:border-primary transition-colors rounded-xl p-5 cursor-pointer hover:bg-primary/5"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-text">Click to upload images</p>
+                      <p className="text-xs text-text-muted">JPG, PNG, WebP up to 5MB each</p>
+                    </div>
+                  </label>
 
-                  
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                    {data.image.map((file, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden border bg-gray-50">
-                          <img
-                            src={typeof file === "string" ? file : URL.createObjectURL(file)}
-                            alt={`Product ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          disabled={loading}
-                          className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                          aria-label="Remove image"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                        {typeof file === "string" && (
-                          <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                            Current
+                  {/* Image Grid */}
+                  {data.image.length > 0 && (
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                      {data.image.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square rounded-lg overflow-hidden border border-border bg-bg-alt">
+                            <img
+                              src={typeof file === "string" ? file : URL.createObjectURL(file)}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            disabled={loading}
+                            className="absolute -top-2 -right-2 h-6 w-6 bg-error text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                          {typeof file === "string" && (
+                            <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                              Current
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {errors.image && (
-                    <p className="text-sm text-red-600 flex items-center gap-1">
-                      <XCircle size={14} />
+                    <p className="text-xs text-error flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.image}
                     </p>
                   )}
                 </div>
               </div>
 
-             
+              {/* Description */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <FileText size={16} />
+                  <FileText size={16} className="text-primary" />
                   Description
                 </label>
                 <textarea
@@ -625,12 +613,15 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   rows={4}
                   className="input w-full resize-none"
                 />
+                <p className="text-xs text-text-muted mt-1">
+                  {data.description.length}/500 characters
+                </p>
               </div>
 
-             
+              {/* More Details */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <FileText size={16} />
+                  <FileText size={16} className="text-primary" />
                   More Details (Optional)
                 </label>
                 <textarea
@@ -642,28 +633,28 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   rows={3}
                   className="input w-full resize-none"
                 />
-                <p className="text-xs text-text-muted mt-2">
-                  You can add bullet points or detailed specifications here
+                <p className="text-xs text-text-muted mt-1">
+                  Add bullet points or detailed specifications here
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        
-        <div className="sticky bottom-0 bg-white border-t p-6">
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-card border-t border-border p-5">
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
               disabled={loading}
-              className="btn-outline px-6 py-2.5 rounded-xl"
+              className="btn btn-outline px-6 py-2.5 rounded-xl"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[140px] justify-center"
+              className="btn btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[140px] justify-center"
             >
               {loading ? (
                 <>
@@ -680,7 +671,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

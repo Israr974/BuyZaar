@@ -7,7 +7,7 @@ import summaryApi from "../common/summartApi";
 import AxiosError from "../utils/AxiosToError";
 import { validateUrlConverter } from "../utils/validateUrl";
 import { useSelector } from "react-redux";
-import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react"; // clean icons
+import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 
 const ProductByCategory = ({ id, name }) => {
   const [products, setProducts] = useState([]);
@@ -63,35 +63,54 @@ const ProductByCategory = ({ id, name }) => {
   const redirectUrl = RedirectProductList(id, name);
 
   return (
-    <div className="p-6 relative">
-      
-      <div className="bg-gradient-to-r from-blue-50 to-white border border-gray-200 rounded-xl p-5 shadow-sm mb-4 flex justify-between items-center">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
-          <ShoppingBag className="w-5 h-5 text-blue-600" />
-          {name}
-        </h2>
+    <div className="mb-8 relative">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-5 px-2">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+          <h2 className="text-xl md:text-2xl font-display font-bold text-text">
+            {name}
+          </h2>
+        </div>
         <Link
           to={redirectUrl}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+          className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+          style={{
+            backgroundColor: "var(--color-bg-alt)",
+            color: "var(--color-primary)",
+          }}
         >
-          View All
+          <span>View All</span>
+          <ChevronRight 
+            size={16} 
+            className="group-hover:translate-x-1 transition-transform" 
+          />
         </Link>
       </div>
 
-      
-      <div className="relative">
-        {(products.length > 6 || loading) && (
+      {/* Products Slider */}
+      <div className="relative px-2">
+        {/* Scroll Buttons */}
+        {(products.length > 4 || loading) && (
           <>
             <button
               onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:bg-gray-100 transition"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-card shadow-md flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:scale-110"
+              style={{
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text)",
+              }}
               aria-label="Scroll left"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:bg-gray-100 transition"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-card shadow-md flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:scale-110"
+              style={{
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text)",
+              }}
               aria-label="Scroll right"
             >
               <ChevronRight size={20} />
@@ -99,15 +118,16 @@ const ProductByCategory = ({ id, name }) => {
           </>
         )}
 
+        {/* Slider Container */}
         <div
           ref={sliderRef}
-          className="flex overflow-x-auto hide-scrollbar gap-5 py-4 px-1"
+          className="flex overflow-x-auto gap-5 py-4 px-1 scroll-smooth hide-scrollbar"
         >
           {loading ? (
             Array(6)
               .fill(0)
               .map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-48">
+                <div key={i} className="flex-shrink-0 w-[200px] md:w-[220px] lg:w-[250px]">
                   <CartLoading />
                 </div>
               ))
@@ -115,29 +135,23 @@ const ProductByCategory = ({ id, name }) => {
             products.map((product) => (
               <div
                 key={product._id}
-                className="flex-shrink-0 w-48 transform hover:scale-105 transition-transform duration-300"
+                className="flex-shrink-0 w-[200px] md:w-[220px] lg:w-[250px] transition-all duration-300 hover:-translate-y-1"
               >
                 <CardProduct product={product} />
               </div>
             ))
           ) : (
-            <div className="w-full text-center text-gray-500 py-10">
-              No products available in <span className="font-semibold">{name}</span>
+            <div className="w-full text-center py-12">
+              <div className="flex flex-col items-center gap-3">
+                <ShoppingBag size={48} style={{ color: "var(--color-text-muted)" }} />
+                <p className="text-text-muted">
+                  No products available in <span className="font-semibold text-primary">{name}</span>
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 };

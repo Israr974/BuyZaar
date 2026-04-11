@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { ImCross } from "react-icons/im";
 import { 
-  Upload, 
-  Image as ImageIcon,CheckCircle,XCircle,Save,Edit3,Camera, Trash2,Loader2,X
+  Upload, Image as ImageIcon, CheckCircle, XCircle, Save, Edit3,
+  Camera, Trash2, Loader2, X, AlertCircle, FolderTree
 } from "lucide-react";
 import Axios from "../utils/Axios";
 import AxiosError from "../utils/AxiosToError";
@@ -20,8 +19,8 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+  const modalRef = useRef(null);
 
-  
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -37,7 +36,6 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
     fetchCategories();
   }, []);
 
-  
   useEffect(() => {
     if (editData) {
       setName(editData.name || "");
@@ -136,14 +134,21 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      // Scroll to first error
+      const firstError = Object.keys(errors)[0];
+      if (firstError) {
+        const errorElement = document.getElementById(`error-${firstError}`);
+        errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
     try {
       setIsSaving(true);
 
       let imageUrl = imagePreview;
 
-     
       if (imageFile && !imagePreview?.startsWith('http')) {
         const imageFormData = new FormData();
         imageFormData.append("image", imageFile);
@@ -180,8 +185,8 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
       if (res.data.success) {
         toast.success(
           editData 
-            ? " Subcategory updated successfully" 
-            : " Subcategory added successfully"
+            ? "Subcategory updated successfully! " 
+            : "Subcategory added successfully! "
         );
         
         if (onSuccess) onSuccess();
@@ -202,7 +207,7 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isSaving) {
       e.preventDefault();
       handleSubmit();
     }
@@ -213,19 +218,21 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
 
   return (
     <section 
-      className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4 fade-in"
       onClick={(e) => e.target === e.currentTarget && !isSaving && onClose()}
     >
       <div 
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col "
+        ref={modalRef}
+        className="relative bg-card rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col"
         onKeyDown={handleKeyPress}
         tabIndex={0}
+        style={{ backgroundColor: "var(--color-card)" }}
       >
-        
-        <div className="sticky top-0 z-10 bg-white border-b p-6">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-card border-b border-border p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2 className="text-2xl font-display font-bold gradient-text">
                 {editData ? "Edit Subcategory" : "Add New Subcategory"}
               </h2>
               <p className="text-sm text-text-muted mt-1">
@@ -236,20 +243,20 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
               onClick={onClose}
               disabled={isSaving}
               aria-label="Close modal"
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-text-muted hover:text-text disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text disabled:opacity-50"
             >
-              <ImCross size={18} />
+              <ImCross size={16} />
             </button>
           </div>
         </div>
 
-        
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-6">
-            
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          <div className="space-y-5">
+            {/* Subcategory Name */}
             <div>
-              <label className="block text-sm font-medium text-text mb-2">
-                Subcategory Name <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-text mb-2">
+                Subcategory Name <span className="text-error">*</span>
               </label>
               <input
                 type="text"
@@ -260,21 +267,21 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
                   setErrors(prev => ({ ...prev, name: null }));
                 }}
                 disabled={isSaving}
-                className={`input w-full ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
+                className={`input w-full ${errors.name ? 'border-error focus:ring-error/20' : ''}`}
                 autoFocus
               />
               {errors.name && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} />
+                <p id="error-name" className="mt-2 text-sm text-error flex items-center gap-1">
+                  <AlertCircle size={14} />
                   {errors.name}
                 </p>
               )}
             </div>
 
-           
+            {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-text mb-2">
-                Description <span className="text-text-muted text-xs">(Optional)</span>
+              <label className="block text-sm font-semibold text-text mb-2">
+                Description <span className="text-text-muted text-xs font-normal">(Optional)</span>
               </label>
               <textarea
                 placeholder="Brief description of the subcategory..."
@@ -285,37 +292,37 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
                 }}
                 disabled={isSaving}
                 rows={3}
-                className={`input w-full resize-none ${errors.description ? 'border-red-500 focus:ring-red-500' : ''}`}
+                className={`input w-full resize-none ${errors.description ? 'border-error focus:ring-error/20' : ''}`}
               />
               <div className="flex justify-between mt-2">
                 {errors.description && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <XCircle size={14} />
+                  <p id="error-description" className="text-sm text-error flex items-center gap-1">
+                    <AlertCircle size={14} />
                     {errors.description}
                   </p>
                 )}
-                <span className={`text-xs ml-auto ${description.length > 180 ? 'text-red-500' : 'text-text-muted'}`}>
+                <span className={`text-xs ml-auto ${description.length > 180 ? 'text-error' : 'text-text-muted'}`}>
                   {description.length}/200
                 </span>
               </div>
             </div>
 
-            
+            {/* Parent Categories */}
             <div>
-              <label className="block text-sm font-medium text-text mb-2">
-                Parent Categories <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-text mb-2">
+                Parent Categories <span className="text-error">*</span>
               </label>
               
-             
+              {/* Category Selector */}
               <div className="mb-3">
                 <select
                   onChange={handleCategorySelect}
                   value=""
                   disabled={isSaving || categories.length === 0}
-                  className="input w-full"
+                  className={`input w-full ${errors.categories ? 'border-error' : ''}`}
                 >
                   <option value="">
-                    {categories.length === 0 ? "Loading categories..." : "Select a category"}
+                    {categories.length === 0 ? "Loading categories..." : "+ Add a category"}
                   </option>
                   {categories
                     .filter((cat) => !selectedCategoryIds.includes(cat._id))
@@ -326,47 +333,50 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
                     ))}
                 </select>
                 {categories.length === 0 && (
-                  <p className="mt-2 text-sm text-text-muted">
+                  <p className="mt-2 text-sm text-text-muted flex items-center gap-1">
+                    <AlertCircle size={12} />
                     No categories available. Please create categories first.
                   </p>
                 )}
               </div>
 
-              
-              <div className="flex flex-wrap gap-2 mb-2">
-                {selectedCategoryIds.map((id) => (
-                  <div
-                    key={id}
-                    className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-sm"
-                  >
-                    <span>{getCategoryName(id)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(id)}
-                      disabled={isSaving}
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
+              {/* Selected Categories */}
+              {selectedCategoryIds.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedCategoryIds.map((id) => (
+                    <div
+                      key={id}
+                      className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-sm border border-primary/20"
                     >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <FolderTree size={12} />
+                      <span>{getCategoryName(id)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategory(id)}
+                        disabled={isSaving}
+                        className="text-primary hover:text-error transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {errors.categories && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} />
+                <p id="error-categories" className="mt-2 text-sm text-error flex items-center gap-1">
+                  <AlertCircle size={14} />
                   {errors.categories}
                 </p>
               )}
             </div>
 
-         
+            {/* Subcategory Image */}
             <div>
-              <label className="block text-sm font-medium text-text mb-2">
-                Subcategory Image <span className="text-text-muted text-xs">(Optional)</span>
+              <label className="block text-sm font-semibold text-text mb-2">
+                Subcategory Image <span className="text-text-muted text-xs font-normal">(Optional)</span>
               </label>
               
-           
               <input
                 type="file"
                 accept="image/*"
@@ -379,39 +389,39 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
               <div className="space-y-3">
                 {imagePreview ? (
                   <div className="relative group">
-                    <div className="aspect-video rounded-xl overflow-hidden border bg-gray-50">
+                    <div className="aspect-video rounded-xl overflow-hidden border border-border bg-bg-alt">
                       <img
                         src={imagePreview}
                         alt="Subcategory preview"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <button
                         onClick={handleUploadClick}
                         disabled={isSaving}
-                        className="p-2 rounded-lg bg-white/90 hover:bg-white text-text hover:scale-105 transition-all"
+                        className="p-2.5 rounded-lg bg-white text-text hover:bg-primary hover:text-white transition-all transform hover:scale-110"
                         title="Replace image"
                       >
-                        <Camera size={20} />
+                        <Camera size={18} />
                       </button>
                       <button
                         onClick={handleRemoveImage}
                         disabled={isSaving}
-                        className="p-2 rounded-lg bg-red-500/90 hover:bg-red-600 text-white hover:scale-105 transition-all"
+                        className="p-2.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all transform hover:scale-110"
                         title="Remove image"
                       >
-                        <Trash2 size={20} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div 
                     onClick={handleUploadClick}
-                    className="aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-primary transition-colors bg-gray-50/50 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-100/50"
+                    className="aspect-video rounded-xl border-2 border-dashed border-border hover:border-primary transition-all bg-bg-alt/50 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-primary/5 group"
                   >
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Upload className="text-primary" size={24} />
+                    <div className="h-14 w-14 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-all flex items-center justify-center">
+                      <Upload className="text-primary" size={26} />
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-text">
@@ -425,30 +435,38 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
                 )}
 
                 {errors.image && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <XCircle size={14} />
+                  <p className="text-sm text-error flex items-center gap-1">
+                    <AlertCircle size={14} />
                     {errors.image}
                   </p>
                 )}
               </div>
             </div>
+
+            {/* Info Tip */}
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-xs text-text-muted flex items-center gap-2">
+                <CheckCircle size={14} className="text-primary" />
+                Subcategories help organize products within categories for better navigation
+              </p>
+            </div>
           </div>
         </div>
 
-        
-        <div className="sticky bottom-0 bg-white border-t p-6">
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-card border-t border-border p-5">
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
               disabled={isSaving}
-              className="btn-outline px-6 py-2.5 rounded-xl"
+              className="btn btn-outline px-5 py-2.5 rounded-xl"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className="btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[120px] justify-center"
+              className="btn btn-primary px-5 py-2.5 rounded-xl flex items-center gap-2 min-w-[120px] justify-center"
             >
               {isSaving ? (
                 <>
@@ -458,12 +476,12 @@ const UploadSubCategoryModel = ({ onClose, editData, onSuccess }) => {
               ) : editData ? (
                 <>
                   <Save size={18} />
-                  Update
+                  Update Subcategory
                 </>
               ) : (
                 <>
                   <CheckCircle size={18} />
-                  Create
+                  Create Subcategory
                 </>
               )}
             </button>

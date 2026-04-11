@@ -3,7 +3,7 @@
 
 import userModel from "../models/User.js";
 import bcryptjs from "bcryptjs";
-import sendMails from "./resendEmail.js";
+import sendMails from "../utils/resendEmail.js";
 import verifyEmailTemplate from "../utils/verifyEmails.js";
 import generateAccessToken from "../utils/accessToken.js";
 import generaterefreshToken from "../utils/refreshToken.js";
@@ -122,11 +122,11 @@ export async function userVerifyEmail(req, res) {
 
 
 
-
 export async function userLogin(req, res) {
   try {
     const { email, password } = req.body;
 
+    // Validate required fields
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password required",
@@ -135,6 +135,7 @@ export async function userLogin(req, res) {
       });
     }
 
+    // Find user by email
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(400).json({
@@ -144,22 +145,20 @@ export async function userLogin(req, res) {
       });
     }
 
-    if (user.verify_email !== undefined && !user.verify_email) {
-      return res.status(403).json({
-        message: "Please verify your email first",
-        error: true,
-        success: false,
-      });
-    }
+    // ✅ REMOVED: Email verification check - Allow login even if not verified
+    // Users can now login without verifying email first
+    // They can verify later from their profile
 
+    // Check if account is active/banned
     if (user.status !== "active") {
       return res.status(403).json({
-        message: "Account inactive or banned",
+        message: "Account inactive or banned. Please contact support.",
         error: true,
         success: false,
       });
     }
 
+    // Verify password
     const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -169,28 +168,29 @@ export async function userLogin(req, res) {
       });
     }
 
-
+    // Generate tokens
     const accessToken = await generateAccessToken(user._id);
     const refreshToken = await generaterefreshToken(user._id);
 
-   
+    // Update user with refresh token and login time
     user.refresh_token = refreshToken;
     user.last_login_date = new Date();
     await user.save();
 
-  
+    // Cookie options
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     };
 
+    // Set cookies
     res.cookie("accessToken", accessToken, cookieOptions);
     res.cookie("refreshToken", refreshToken, cookieOptions);
 
-    
+    // Prepare user data for response
     const userData = {
       id: user._id,
       _id: user._id,
@@ -199,18 +199,23 @@ export async function userLogin(req, res) {
       mobile: user.mobile || "",
       role: user.role || "user",
       status: user.status,
-      verify_email: user.verify_email,
+      verify_email: user.verify_email || false, // Show verification status
+      isEmailVerified: user.verify_email || false, // Frontend friendly field
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
 
+    // Send success response with verification warning if not verified
     return res.json({
-      message: "Login successful",
+      message: user.verify_email 
+        ? "Login successful" 
+        : "Login successful! Please verify your email to access all features.",
       success: true,
       error: false,
+      requiresEmailVerification: !user.verify_email, // Let frontend know
       data: {
         user: userData,
-        accessToken,     
+        accessToken,
         refreshToken,
       },
     });
@@ -226,6 +231,75 @@ export async function userLogin(req, res) {
 }
 
 
+export async function resendVerificationEmail(req, res) {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+        error: true,
+        success: false,
+      });
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Check if already verified
+    if (user.verify_email === true) {
+      return res.status(400).json({
+        message: "Email already verified",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Generate new verification token
+    const emailToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.EMAIL_VERIFY_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // Create verification URL
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.BACKEND_URL 
+      : 'http://localhost:3000';
+    
+    const verifyEmailUrl = `${baseUrl}/api/user/verify-email?code=${emailToken}`;
+
+    // Send verification email
+    await sendMails({
+      to: user.email,
+      subject: "Verify Your Email - BuyZaar",
+      html: verifyEmailTemplate({ 
+        name: user.name, 
+        url: verifyEmailUrl 
+      }),
+    });
+
+    return res.json({
+      message: "Verification email sent successfully",
+      success: true,
+      error: false,
+    });
+
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to send verification email",
+      error: true,
+      success: false,
+    });
+  }
+}
 export async function userLogout(req, res) {
   try {
     const cookieOptions = {

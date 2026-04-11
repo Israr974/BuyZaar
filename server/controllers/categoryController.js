@@ -45,14 +45,28 @@ export const AddCategory = async (req, res) => {
 };
 
 
+
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find({}).sort({ createdAt: -1 });
+    
+    // Get product count for each category
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await Product.countDocuments({ 
+          category: category._id 
+        });
+        return {
+          ...category.toObject(),
+          productCount
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
       error: false,
-      data: categories,
+      data: categoriesWithCount,
     });
   } catch (error) {
     res.status(500).json({
@@ -62,7 +76,6 @@ export const getAllCategories = async (req, res) => {
     });
   }
 };
-
 
 export const updateCategory = async (req, res) => {
   try {
