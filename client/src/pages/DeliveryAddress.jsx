@@ -23,6 +23,26 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Lock body scroll when modal opens
+  useEffect(() => {
+    // Save original body overflow style
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    
+    // Calculate scrollbar width to prevent layout shift
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    
+    // Lock scroll on body
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    
+    // Cleanup function - restore scroll when modal closes
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, []);
+
   useEffect(() => {
     if (addressToEdit) {
       setFormData({
@@ -140,18 +160,33 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
     }
   };
 
+  // Handle backdrop click to close modal
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 fade-in">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-zoom-in">
-        {/* Header */}
-        <div className="sticky top-0 bg-card border-b border-border p-5">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 fade-in"
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
+      }}
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-zoom-in">
+        {/* Header - Sticky */}
+        <div className="flex-shrink-0 bg-card border-b border-border p-4 md:p-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <MapPin className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                <MapPin className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold gradient-text">
+                <h2 className="text-lg md:text-xl font-display font-bold gradient-text">
                   {addressToEdit ? "Edit Address" : "Add New Address"}
                 </h2>
                 <p className="text-xs text-text-muted mt-0.5">
@@ -161,25 +196,25 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
+              className="p-1.5 md:p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
               aria-label="Close"
             >
-              <X size={20} />
+              <X size={18} className="md:w-5 md:h-5" />
             </button>
           </div>
         </div>
 
-        {/* Form Body */}
-        <div className="overflow-y-auto p-5 custom-scrollbar">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Form Body - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5" id="addressForm">
             {/* Full Name */}
             <div>
-              <label className="label flex items-center gap-2">
-                <User size={14} className="text-primary" />
+              <label className="label flex items-center gap-2 text-xs md:text-sm">
+                <User size={12} className="md:w-3.5 md:h-3.5 text-primary" />
                 Full Name <span className="text-error">*</span>
               </label>
               <input
-                className={`input ${errors.name ? 'border-error' : ''}`}
+                className={`input ${errors.name ? 'border-error' : ''} text-sm md:text-base py-2 md:py-2.5`}
                 name="name"
                 placeholder="Enter recipient name"
                 value={formData.name}
@@ -195,12 +230,12 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
 
             {/* Address Line */}
             <div>
-              <label className="label flex items-center gap-2">
-                <MapPin size={14} className="text-primary" />
+              <label className="label flex items-center gap-2 text-xs md:text-sm">
+                <MapPin size={12} className="md:w-3.5 md:h-3.5 text-primary" />
                 Address Line <span className="text-error">*</span>
               </label>
               <textarea
-                className={`input resize-none ${errors.addressLine ? 'border-error' : ''}`}
+                className={`input resize-none ${errors.addressLine ? 'border-error' : ''} text-sm md:text-base`}
                 name="addressLine"
                 placeholder="House number, street, area"
                 rows="2"
@@ -217,12 +252,12 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
 
             {/* Address Type */}
             <div>
-              <label className="label flex items-center gap-2">
-                <Navigation size={14} className="text-primary" />
+              <label className="label flex items-center gap-2 text-xs md:text-sm">
+                <Navigation size={12} className="md:w-3.5 md:h-3.5 text-primary" />
                 Address Type
               </label>
-              <div className="flex gap-3">
-                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all ${
+              <div className="flex flex-wrap gap-2 md:gap-3">
+                <label className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg border cursor-pointer transition-all text-xs md:text-sm ${
                   formData.address_type === 'home' 
                     ? 'border-primary bg-primary/5 text-primary' 
                     : 'border-border hover:border-primary/50'
@@ -235,10 +270,10 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
                     onChange={handleChange}
                     className="hidden"
                   />
-                  <Home size={16} />
-                  <span className="text-sm">Home</span>
+                  <Home size={14} className="md:w-4 md:h-4" />
+                  <span>Home</span>
                 </label>
-                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all ${
+                <label className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg border cursor-pointer transition-all text-xs md:text-sm ${
                   formData.address_type === 'office' 
                     ? 'border-primary bg-primary/5 text-primary' 
                     : 'border-border hover:border-primary/50'
@@ -251,10 +286,10 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
                     onChange={handleChange}
                     className="hidden"
                   />
-                  <Building size={16} />
-                  <span className="text-sm">Office</span>
+                  <Building size={14} className="md:w-4 md:h-4" />
+                  <span>Office</span>
                 </label>
-                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all ${
+                <label className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg border cursor-pointer transition-all text-xs md:text-sm ${
                   formData.address_type === 'other' 
                     ? 'border-primary bg-primary/5 text-primary' 
                     : 'border-border hover:border-primary/50'
@@ -267,20 +302,20 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
                     onChange={handleChange}
                     className="hidden"
                   />
-                  <MapPin size={16} />
-                  <span className="text-sm">Other</span>
+                  <MapPin size={14} className="md:w-4 md:h-4" />
+                  <span>Other</span>
                 </label>
               </div>
             </div>
 
             {/* City & State */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div>
-                <label className="label flex items-center gap-2">
+                <label className="label flex items-center gap-2 text-xs md:text-sm">
                   City <span className="text-error">*</span>
                 </label>
                 <input
-                  className={`input ${errors.city ? 'border-error' : ''}`}
+                  className={`input ${errors.city ? 'border-error' : ''} text-sm md:text-base py-2 md:py-2.5`}
                   name="city"
                   placeholder="City"
                   value={formData.city}
@@ -291,11 +326,11 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
                 )}
               </div>
               <div>
-                <label className="label flex items-center gap-2">
+                <label className="label flex items-center gap-2 text-xs md:text-sm">
                   State <span className="text-error">*</span>
                 </label>
                 <input
-                  className={`input ${errors.state ? 'border-error' : ''}`}
+                  className={`input ${errors.state ? 'border-error' : ''} text-sm md:text-base py-2 md:py-2.5`}
                   name="state"
                   placeholder="State"
                   value={formData.state}
@@ -308,29 +343,30 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
             </div>
 
             {/* Pincode & Country */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div>
-                <label className="label flex items-center gap-2">
+                <label className="label flex items-center gap-2 text-xs md:text-sm">
                   Pincode <span className="text-error">*</span>
                 </label>
                 <input
-                  className={`input ${errors.pincode ? 'border-error' : ''}`}
+                  className={`input ${errors.pincode ? 'border-error' : ''} text-sm md:text-base py-2 md:py-2.5`}
                   name="pincode"
                   placeholder="6-digit pincode"
                   value={formData.pincode}
                   onChange={handleChange}
                   maxLength={6}
+                  inputMode="numeric"
                 />
                 {errors.pincode && (
                   <p className="mt-1 text-xs text-error">{errors.pincode}</p>
                 )}
               </div>
               <div>
-                <label className="label flex items-center gap-2">
+                <label className="label flex items-center gap-2 text-xs md:text-sm">
                   Country <span className="text-error">*</span>
                 </label>
                 <input
-                  className="input"
+                  className="input text-sm md:text-base py-2 md:py-2.5"
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
@@ -340,17 +376,18 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
 
             {/* Mobile Number */}
             <div>
-              <label className="label flex items-center gap-2">
-                <Phone size={14} className="text-primary" />
+              <label className="label flex items-center gap-2 text-xs md:text-sm">
+                <Phone size={12} className="md:w-3.5 md:h-3.5 text-primary" />
                 Mobile Number <span className="text-error">*</span>
               </label>
               <input
-                className={`input ${errors.mobile ? 'border-error' : ''}`}
+                className={`input ${errors.mobile ? 'border-error' : ''} text-sm md:text-base py-2 md:py-2.5`}
                 name="mobile"
                 placeholder="10-digit mobile number"
                 value={formData.mobile}
                 onChange={handleChange}
                 maxLength={10}
+                inputMode="numeric"
               />
               {errors.mobile && (
                 <p className="mt-1 text-xs text-error flex items-center gap-1">
@@ -365,13 +402,13 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-card border-t border-border p-5">
-          <div className="flex justify-end gap-3">
+        {/* Footer - Sticky */}
+        <div className="flex-shrink-0 bg-card border-t border-border p-4 md:p-5">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 md:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-outline px-6 py-2.5 rounded-xl"
+              className="btn btn-outline px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-sm md:text-base"
               disabled={isSubmitting}
             >
               Cancel
@@ -380,17 +417,17 @@ const DeliveryAddress = ({ onClose, refreshAddresses, addressToEdit }) => {
               type="submit"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="btn btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[120px] justify-center"
+              className="btn btn-primary px-4 md:px-6 py-2 md:py-2.5 rounded-xl flex items-center justify-center gap-2 min-w-[120px] text-sm md:text-base"
             >
               {isSubmitting ? (
                 <>
                   <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save size={16} />
-                  Save Address
+                  <Save size={16} className="md:w-4 md:h-4" />
+                  <span>Save Address</span>
                 </>
               )}
             </button>

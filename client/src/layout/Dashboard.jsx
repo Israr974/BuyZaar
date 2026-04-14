@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ShowMenu from '../components/ShowMenu';
 import { useSelector } from 'react-redux';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -7,6 +7,31 @@ import { Home, ChevronRight } from 'lucide-react';
 const Dashboard = () => {
   const user = useSelector((state) => state.user);
   const location = useLocation();
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [showBottomNav, setShowBottomNav] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show nav when scrolling up or at top
+      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+        setShowBottomNav(true);
+      } 
+      // Hide nav when scrolling down and not at top
+      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setShowBottomNav(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   const getPageTitle = () => {
     const path = location.pathname.split('/').pop();
@@ -95,15 +120,21 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Page Content */}
-          <div className="p-6">
+          {/* Page Content - Dynamic bottom padding based on nav visibility */}
+          <div className={`p-6 transition-all duration-300 ${
+            showBottomNav ? 'pb-28 lg:pb-6' : 'pb-6 lg:pb-6'
+          }`}>
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+      {/* Mobile Bottom Navigation - Auto Hide on Scroll */}
+      <div 
+        className={`lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 transition-transform duration-300 ease-in-out ${
+          showBottomNav ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
         <div className="flex items-center justify-around py-2">
           <button
             onClick={() => window.location.href = '/dashboard/profile'}

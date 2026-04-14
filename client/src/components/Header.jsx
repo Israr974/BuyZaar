@@ -8,7 +8,7 @@ import {
 import useMobile from "../hooks/useMobile";
 import DisplayCart from "./DisplayCart";
 import ShowMenu from "./ShowMenu";
-import DarkModeToggle from "./DarkModeToggle"; // ADD THIS IMPORT
+import DarkModeToggle from "./DarkModeToggle";
 import { formatINR } from "../utils/formatINR";
 import { validateUrlConverter } from "../utils/validateUrl";
 import logo from "../assets/logoBuyZaar.svg"
@@ -24,7 +24,6 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-  // Refs for category scroll
   const categoriesContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -46,7 +45,6 @@ const Header = () => {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Check scroll position to show/hide arrows
   const checkScrollPosition = () => {
     if (categoriesContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = categoriesContainerRef.current;
@@ -93,54 +91,54 @@ const Header = () => {
     0
   );
 
+  const isSearchPage = location.pathname === "/search";
+
+  if (isSearchPage) {
+    return null;
+  }
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-card shadow-sm border-b border-border">
         {!isMobile ? (
-          /* ================= DESKTOP VIEW ================= */
           <div className="container-wide">
-            <div className="flex items-center justify-between px-6 py-4">
-              {/* Logo */}
+            <div className="flex items-center justify-between px-6 py-4 gap-4">
               <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
                 <div className="rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                  <img src={logo} alt="image" className="w-20 h-20 object-contain" />
+                  <img src={logo} alt="image" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-extrabold">
-                    <span className="text-blue-600 drop-shadow-[0_0_6px_rgba(37,99,235,0.8)]">
-                      Buy
-                    </span>
-                    <span className="text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]">
-                      Zaar
-                    </span>
+                  <h1 className="text-xl md:text-2xl font-extrabold">
+                    <span className="text-blue-600">Buy</span>
+                    <span className="text-orange-500">Zaar</span>
                   </h1>
                   <p className="text-xs text-text-muted hidden lg:block">Just Buy It!</p>
                 </div>
               </Link>
 
-              {/* Search Bar */}
-
-              <div className="flex-1 max-w-2xl mx-8">
-                <form onSubmit={handleSearch} className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products, brands, and categories..."
-                    className="input pl-12 pr-28 w-full"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 btn btn-primary px-4 py-1.5 text-sm"
-                  >
-                    Search
-                  </button>
+              <div className="flex-1 max-w-2xl mx-4 lg:mx-8">
+                <form onSubmit={handleSearch} className="relative w-full">
+                  <div className="relative w-full">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                      <Search className="w-5 h-5 text-text-muted" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search products, brands, and categories..."
+                      className="w-full h-12 pl-11 pr-28 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text placeholder:text-text-muted/60"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                      <button type="submit" className="btn btn-primary px-4 py-1.5 text-sm whitespace-nowrap">
+                        Search
+                      </button>
+                    </div>
+                  </div>
                 </form>
               </div>
-              {/* Actions */}
-              <div className="flex items-center gap-4 flex-shrink-0">
-                {/* ADD DARK MODE TOGGLE HERE */}
+
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <DarkModeToggle />
 
                 <button
@@ -155,18 +153,17 @@ const Header = () => {
                   )}
                 </button>
 
-                {/* Desktop User Menu */}
                 {user?.id ? (
                   <div className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-primary/5 transition"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/5 transition"
                     >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
                         {user?.name?.charAt(0).toUpperCase()}
                       </div>
                       <div className="text-left hidden lg:block">
-                        <p className="text-sm font-semibold">{user?.name || "Account"}</p>
+                        <p className="text-sm font-semibold">{user?.name?.split(' ')[0] || "Account"}</p>
                         <p className="text-xs text-text-muted">My Account</p>
                       </div>
                       <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -184,16 +181,15 @@ const Header = () => {
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => navigate("/login")} className="btn btn-primary px-6">
+                  <button onClick={() => navigate("/login")} className="btn btn-primary px-5 py-2">
                     <User className="w-4 h-4 mr-2" />
                     Login
                   </button>
                 )}
 
-                {/* Cart Button */}
                 <button
                   onClick={() => setOpencart(true)}
-                  className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 transition group relative"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 transition group relative"
                 >
                   <div className="relative">
                     <ShoppingBag className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
@@ -211,21 +207,17 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Categories Bar with Professional Scroll */}
             <div className="bg-gradient-primary border-t border-border/20 relative">
               <div className="relative px-6 py-3">
-                {/* Left Scroll Arrow */}
                 {showLeftArrow && (
                   <button
                     onClick={() => scrollCategories('left')}
                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
-                    style={{ transform: 'translateY(-50%)' }}
                   >
                     <ChevronLeft size={18} />
                   </button>
                 )}
 
-                {/* Categories Container */}
                 <div
                   ref={categoriesContainerRef}
                   className="flex items-center gap-6 overflow-x-auto scroll-smooth hide-scrollbar"
@@ -242,56 +234,37 @@ const Header = () => {
                   ))}
                 </div>
 
-                {/* Right Scroll Arrow */}
                 {showRightArrow && (
                   <button
                     onClick={() => scrollCategories('right')}
                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
-                    style={{ transform: 'translateY(-50%)' }}
                   >
                     <ChevronRight size={18} />
                   </button>
                 )}
               </div>
-
-              {/* Sale Tag - Separate from scrollable area */}
-{/*               
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm text-white/90 whitespace-nowrap bg-gradient-primary px-4 py-1 rounded-full">
-                <Tag className="w-4 h-4 text-yellow-300" />
-                <span className="font-medium text-yellow-300">Sale Live!</span>
-                <span className="hidden md:inline">Up to 60% Off</span>
-              </div> */}
             </div>
           </div>
         ) : (
-          /* ================= MOBILE VIEW ================= */
           <div className="px-4 py-3">
-            {/* Mobile Header Row 1 */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-2 rounded-lg hover:bg-primary/5"
+                className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/5"
               >
                 <Menu className="w-6 h-6 text-text" />
               </button>
 
-              <Link to="/" className="flex items-center gap-2">
-                <img src={logo} alt="image" className="w-8 h-8 object-contain" />
-                <h1 className="text-xl font-bold gradient-text">BuyZaar</h1>
+              <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+                <img src={logo} alt="image" className="w-7 h-7 object-contain" />
+                <h1 className="text-lg font-bold gradient-text">BuyZaar</h1>
               </Link>
 
-              <div className="flex items-center gap-1">
-                {/* ADD DARK MODE TOGGLE FOR MOBILE */}
+              <div className="flex items-center gap-0.5 flex-shrink-0">
                 <DarkModeToggle />
-
+               
                 <button
-                  onClick={() => setMobileSearchOpen(true)}
-                  className="p-2 rounded-lg hover:bg-primary/5"
-                >
-                  <Search className="w-5 h-5 text-text-muted" />
-                </button>
-                <button
-                  onClick={() => navigate("/wishlist")}
+                  onClick={() => navigate("/dashboard/wishlist")}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
                 >
                   <Heart className="w-5 h-5 text-text-muted" />
@@ -301,6 +274,7 @@ const Header = () => {
                     </span>
                   )}
                 </button>
+                
                 <button
                   onClick={() => setOpencart(true)}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
@@ -312,27 +286,39 @@ const Header = () => {
                     </span>
                   )}
                 </button>
+
+                {/* ✅ ADD LOGIN BUTTON FOR MOBILE - ONLY WHEN NOT LOGGED IN */}
+                {!user?.id && (
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="p-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition"
+                  >
+                    <User className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Mobile Search Bar */}
             <div className="mt-3">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-muted" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products..."
-                  className="input pl-9 pr-4 py-2 text-sm w-full"
-                />
+              <form onSubmit={handleSearch} className="relative w-full">
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="w-4 h-4 text-text-muted" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full h-10 pl-9 pr-4 rounded-lg bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm text-text placeholder:text-text-muted/60"
+                  />
+                </div>
               </form>
             </div>
 
-            {/* Quick Categories - Horizontal Scroll (Mobile) */}
             <div className="mt-3 overflow-x-auto pb-2 hide-scrollbar">
               <div className="flex items-center gap-2 min-w-max">
-                <button className="px-3 py-1.5 rounded-full bg-gradient-primary text-white text-xs font-medium">
+                <button className="px-3 py-1.5 rounded-full bg-gradient-primary text-white text-xs font-medium whitespace-nowrap">
                   🔥 Sale!
                 </button>
                 {allCategories.map((category) => (
@@ -349,7 +335,6 @@ const Header = () => {
           </div>
         )}
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <>
             <div
@@ -367,34 +352,36 @@ const Header = () => {
           </>
         )}
 
-        {/* Mobile Search Modal */}
         {mobileSearchOpen && (
           <>
             <div
-              className="fixed inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
               onClick={() => setMobileSearchOpen(false)}
             />
             <div className="fixed top-0 left-0 right-0 bg-card z-50 p-4 shadow-lg animate-slide-in-down">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="What are you looking for?"
-                  className="input pl-10 pr-12 py-3 w-full"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 btn btn-primary px-3 py-1 text-sm"
-                >
-                  Go
-                </button>
+              <form onSubmit={handleSearch} className="relative w-full">
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="w-5 h-5 text-text-muted" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="What are you looking for?"
+                    className="w-full h-12 pl-10 pr-16 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text"
+                    autoFocus
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                    <button type="submit" className="btn btn-primary px-3 py-1.5 text-sm whitespace-nowrap">
+                      Go
+                    </button>
+                  </div>
+                </div>
               </form>
               <button
                 onClick={() => setMobileSearchOpen(false)}
-                className="absolute right-4 top-4 text-text-muted"
+                className="absolute right-4 top-4 text-text-muted hover:text-text transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

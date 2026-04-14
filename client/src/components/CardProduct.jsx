@@ -7,7 +7,7 @@ import summaryApi from "../common/summartApi";
 import toast from "react-hot-toast";
 import { setCartItems } from "../redux/cartSlice";
 import { addToWishlist, removeFromWishlist } from "../redux/wishlistSlice";
-import { IoIosLock, IoIosStar } from "react-icons/io";
+import { IoIosStar } from "react-icons/io";
 import { TiShoppingCart } from "react-icons/ti";
 import { Heart, Eye, ShoppingBag, CheckCircle } from "lucide-react";
 
@@ -27,7 +27,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Check if product is in wishlist when component mounts or wishlist changes
   useEffect(() => {
     const inWishlist = wishlistItems.some(
       (item) => item.productId === product._id || item._id === product._id
@@ -53,6 +52,28 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
     const hasReduxUser = !!(user?.id || user?.email);
     return hasReduxUser;
   };
+
+  // Calculate discount percentage safely
+  const getDiscountPercent = () => {
+    if (!product) return 0;
+    
+    const discount = product.discount;
+    const price = product.price;
+    const originalPrice = product.originalPrice;
+    
+    if (!discount || discount <= 0) return 0;
+    
+    if (discount <= 100) return discount;
+    
+    if (originalPrice && originalPrice > price) {
+      const percent = Math.round(((originalPrice - price) / originalPrice) * 100);
+      return percent > 0 ? percent : 0;
+    }
+    
+    return 0;
+  };
+  
+  const discountPercent = getDiscountPercent();
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -153,7 +174,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
 
     try {
       if (isWishlisted) {
-        // Remove from wishlist
         const response = await Axios({
           ...summaryApi().removeFromWishlist,
           data: { productId: product._id },
@@ -168,7 +188,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
           toast.error(response.data.message || "Failed to remove from wishlist");
         }
       } else {
-        // Add to wishlist
         const response = await Axios({
           ...summaryApi().addToWishlist,
           data: { productId: product._id },
@@ -180,7 +199,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
           setIsWishlisted(true);
           toast.success("Added to wishlist");
         } else {
-          // If product already in wishlist, update UI
           if (response.data?.message === "Product already in wishlist") {
             setIsWishlisted(true);
             dispatch(addToWishlist({ productId: product._id, product: product }));
@@ -193,7 +211,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
     } catch (error) {
       console.error("Wishlist error:", error);
       
-      // Handle "already in wishlist" error from backend
       if (error.response?.data?.message === "Product already in wishlist") {
         setIsWishlisted(true);
         dispatch(addToWishlist({ productId: product._id, product: product }));
@@ -208,9 +225,6 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
     }
   };
 
-  const authStatus = isAuthenticated();
-  const discountPercent = product.discount ? Math.round((product.discount / product.originalPrice) * 100) : 0;
-
   // List view mode
   if (viewMode === "list") {
     return (
@@ -222,8 +236,8 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            {product.discount > 0 && (
-              <div className="absolute top-2 left-2 bg-gradient-to-r from-accent to-accent-dark text-white text-xs font-bold px-2 py-1 rounded-full">
+            {discountPercent > 0 && (
+              <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                 -{discountPercent}%
               </div>
             )}
@@ -247,7 +261,7 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
                   {[...Array(5)].map((_, i) => (
                     <IoIosStar
                       key={i}
-                      className={`text-sm ${i < Math.floor(product.rating) ? 'text-accent' : 'text-border'}`}
+                      className={`text-sm ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
                     />
                   ))}
                 </div>
@@ -261,7 +275,7 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             </p>
             
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-2xl font-bold gradient-text">
+              <span className="text-2xl font-bold text-primary">
                 ₹{product.price?.toLocaleString()}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
@@ -275,7 +289,7 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
-                className={`flex-1 btn ${product.stock === 0 ? 'btn-disabled' : 'btn-primary'} py-2 text-sm flex items-center justify-center gap-2`}
+                className={`flex-1 btn ${product.stock === 0 ? 'bg-gray-300 cursor-not-allowed' : 'btn-primary'} py-2 text-sm flex items-center justify-center gap-2`}
               >
                 {quantityInCart > 0 ? (
                   <>
@@ -294,7 +308,7 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
                 disabled={isProcessing}
                 className="p-2 rounded-lg border border-border hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
               >
-                <Heart size={18} className={isWishlisted ? "fill-accent text-accent" : ""} />
+                <Heart size={18} className={isWishlisted ? "fill-red-500 text-red-500" : ""} />
               </button>
             </div>
           </div>
@@ -303,7 +317,7 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
     );
   }
 
-  // Grid view mode (original)
+  // Grid view mode
   return (
     <div className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
       <Link to={url} className="block relative overflow-hidden">
@@ -314,14 +328,12 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           
-          {/* Discount Badge */}
-          {product.discount > 0 && (
-            <div className="absolute top-2 left-2 bg-gradient-to-r from-accent to-accent-dark text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+          {discountPercent > 0 && (
+            <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
               -{discountPercent}%
             </div>
           )}
           
-          {/* Out of Stock Overlay */}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
               <span className="text-white font-semibold text-sm bg-red-500/90 px-3 py-1.5 rounded-full">
@@ -330,13 +342,12 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             </div>
           )}
           
-          {/* Quick Action Buttons */}
           <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-3 bg-gradient-to-t from-black/80 to-transparent">
             <div className="flex gap-2">
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
-                className="flex-1 bg-white text-text hover:bg-primary hover:text-white rounded-lg py-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-white text-gray-800 hover:bg-primary hover:text-white rounded-lg py-2 text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {quantityInCart > 0 ? (
                   <>
@@ -353,9 +364,9 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
               <button
                 onClick={handleWishlist}
                 disabled={isProcessing}
-                className="w-9 h-9 bg-white rounded-lg hover:bg-accent hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
+                className="w-9 h-9 bg-white rounded-lg hover:bg-red-500 hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
               >
-                <Heart size={16} className={isWishlisted ? "fill-accent text-accent" : ""} />
+                <Heart size={16} className={isWishlisted ? "fill-red-500 text-red-500" : ""} />
               </button>
             </div>
           </div>
@@ -366,14 +377,13 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             {product.name}
           </h3>
           
-          {/* Rating */}
           {product.rating && (
             <div className="flex items-center gap-1 mt-1">
               <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <IoIosStar
                     key={i}
-                    className={`text-xs ${i < Math.floor(product.rating) ? 'text-accent' : 'text-border'}`}
+                    className={`text-xs ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
                   />
                 ))}
               </div>
@@ -381,9 +391,8 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             </div>
           )}
           
-          {/* Price */}
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-lg font-bold gradient-text">
+            <span className="text-lg font-bold text-primary">
               ₹{product.price?.toLocaleString()}
             </span>
             {product.originalPrice && product.originalPrice > product.price && (
@@ -393,9 +402,8 @@ const CardProduct = ({ product, viewMode = "grid" }) => {
             )}
           </div>
           
-          {/* Stock Status */}
           {product.stock > 0 && product.stock < 10 && (
-            <p className="text-xs text-warning mt-1">Only {product.stock} left!</p>
+            <p className="text-xs text-orange-500 mt-1">Only {product.stock} left!</p>
           )}
         </div>
       </Link>

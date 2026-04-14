@@ -10,6 +10,134 @@ import generaterefreshToken from "../utils/refreshToken.js";
 import genrateOtp from "../utils/genrateOtp.js";
 import forgotPasswordOtp from "../utils/forgotPassword.js";
 import jwt from "jsonwebtoken";
+import cloudinary from "../config/cloudinary.js";
+import { upload } from '../middleware/multer.js';
+
+
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { image } = req.body;
+
+    if (!image) {
+      return res.status(400).json({
+        message: "Image URL is required",
+        error: true,
+        success: false,
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Save the URL to database (same as category)
+    user.profile = image;
+    await user.save();
+
+    return res.json({
+      message: "Profile picture uploaded successfully",
+      success: true,
+      error: false,
+      data: {
+        profile: user.profile,
+      },
+    });
+  } catch (error) {
+    console.error("Upload profile error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to upload profile picture",
+      error: true,
+      success: false,
+    });
+  }
+};
+
+export const updateProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { image } = req.body;  // Receive new URL from frontend
+
+    if (!image) {
+      return res.status(400).json({
+        message: "Image URL is required",
+        error: true,
+        success: false,
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Update with new URL (same as category update)
+    user.profile = image;
+    await user.save();
+
+    return res.json({
+      message: "Profile picture updated successfully",
+      success: true,
+      error: false,
+      data: {
+        profile: user.profile,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to update profile picture",
+      error: true,
+      success: false,
+    });
+  }
+};
+
+export const deleteProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Reset to default (same as category delete pattern)
+    user.profile = "/placeholder-profile.png";
+    await user.save();
+
+    return res.json({
+      message: "Profile picture deleted successfully",
+      success: true,
+      error: false,
+      data: {
+        profile: user.profile,
+      },
+    });
+  } catch (error) {
+    console.error("Delete profile error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to delete profile picture",
+      error: true,
+      success: false,
+    });
+  }
+};
+
+
 
 
 async function userModelRegister(req, res) {
@@ -334,12 +462,15 @@ export async function userLogout(req, res) {
   }
 }
 
-
 export async function updateUserDetails(req, res) {
   try {
     const user = await userModel.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        message: "User not found",
+        error: true,
+        success: false,
+      });
     }
 
     const { name, email, mobile, password } = req.body;
@@ -352,12 +483,26 @@ export async function updateUserDetails(req, res) {
     await user.save();
 
     return res.json({
-      message: "Profile updated",
+      message: "Profile updated successfully",
       success: true,
       error: false,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        profile: user.profile,
+        role: user.role,
+        verify_email: user.verify_email,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    console.error("Update user error:", error);
+    return res.status(500).json({ 
+      message: "Server error",
+      error: true,
+      success: false,
+    });
   }
 }
 
@@ -485,12 +630,40 @@ export async function refreshTokenController(req, res) {
 
 
 export async function getUserDetails(req, res) {
-  const user = await userModel.findById(req.user.id).select("-password");
+  try {
+    const user = await userModel.findById(req.user.id).select("-password -refresh_token");
+    
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
 
-  return res.json({
-    success: true,
-    error: false,
-    user,
-  });
+    return res.json({
+      success: true,
+      error: false,
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        profile: user.profile,
+        role: user.role,
+        verify_email: user.verify_email,
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      error: true,
+      success: false,
+    });
+  }
 }
 

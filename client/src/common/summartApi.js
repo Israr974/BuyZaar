@@ -1,6 +1,7 @@
 
-export const baseUrl ="https://buyzaar-0ye1.onrender.com"
+// export const baseUrl = "https://buyzaar-0ye1.onrender.com"
 
+export const baseUrl="http://localhost:3000"
 const summaryApi = () => {
   return {
 
@@ -15,7 +16,16 @@ const summaryApi = () => {
     getUserDetail: { url: `${baseUrl}/api/user/me`, method: 'get' },/*------------- */
     logout: { url: `${baseUrl}/api/user/logout`, method: 'post' },
     updateUser: { url: `${baseUrl}/api/user/update`, method: 'put' },
-resendVerification: {  url: `${baseUrl}/api/user/resend-verification`,method: 'post'},
+    resendVerification: { url: `${baseUrl}/api/user/resend-verification`, method: 'post' },
+
+
+
+
+ uploadAvatar: { url: `${baseUrl}/api/user/upload-profile`, method: "post" },
+    updateAvatar: { url: `${baseUrl}/api/user/update-profile`, method: "put" },
+    deleteAvatar: { url: `${baseUrl}/api/user/delete-profile`, method: "delete" },
+
+
 
     // Category
     addCategory: { url: `${baseUrl}/api/category`, method: 'post' },
@@ -62,8 +72,8 @@ resendVerification: {  url: `${baseUrl}/api/user/resend-verification`,method: 'p
     updateDeliveryStatus: (id) => ({ url: `${baseUrl}/api/orders/${id}/status`, method: 'put' }),
     placeOrder: { url: `${baseUrl}/api/orders`, method: 'post' },
     // Add this endpoint
-getAllOrders: { url: `${baseUrl}/api/orders`, method: 'get' },
-updateOrderStatus: (id) => ({ url: `${baseUrl}/api/orders/${id}/status`, method: 'put' }),
+    getAllOrders: { url: `${baseUrl}/api/orders`, method: 'get' },
+    updateOrderStatus: (id) => ({ url: `${baseUrl}/api/orders/${id}/status`, method: 'put' }),
 
     // Wishlist
     addToWishlist: { url: `${baseUrl}/api/wishlist/add`, method: 'post' },

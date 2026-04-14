@@ -1,4 +1,3 @@
-
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -8,6 +7,7 @@ const initialState = {
   mobile: "",
   role: "",
   status: "",
+  profile: "",
   address_details: [],
   orderHistory: [],
   shopping_cart: [],
@@ -41,7 +41,6 @@ const userSlice = createSlice({
         Object.assign(state, user);
         state.isLoggedIn = true;
         
-        // Calculate stats
         state.stats.totalOrders = user.orderHistory?.length || 0;
         state.stats.savedAddresses = user.address_details?.length || 0;
         state.stats.wishlistCount = user.wishlist?.length || 0;
@@ -66,7 +65,6 @@ const userSlice = createSlice({
       Object.assign(state, updates);
       state.isLoggedIn = true;
       
-      // Update stats if order history or addresses changed
       if (updates.orderHistory) {
         state.stats.totalOrders = updates.orderHistory.length;
         state.stats.totalSpent = updates.orderHistory.reduce(

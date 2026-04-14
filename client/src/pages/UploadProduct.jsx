@@ -366,6 +366,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
   </div>
   
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Product Name */}
     <div>
       <label className="label flex items-center gap-1">
         Product Name <span className="text-error">*</span>
@@ -378,7 +379,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           placeholder="Enter product name"
           value={data.name}
           onChange={handleChange}
-          className={`input pl-10 w-full ${errors.name ? 'border-error' : ''}`}
+          className={`input w-full ${errors.name ? 'border-error' : ''}`}
+          style={{ paddingLeft: '2.5rem' }}
         />
       </div>
       {errors.name && (
@@ -389,6 +391,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       )}
     </div>
     
+    {/* SKU */}
     <div>
       <label className="label">SKU (Optional)</label>
       <div className="relative">
@@ -399,11 +402,13 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           placeholder="Enter SKU"
           value={data.sku}
           onChange={handleChange}
-          className="input pl-10 w-full"
+          className="input w-full"
+          style={{ paddingLeft: '2.5rem' }}
         />
       </div>
     </div>
     
+    {/* Brand */}
     <div>
       <label className="label">Brand (Optional)</label>
       <input
@@ -416,6 +421,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       />
     </div>
     
+    {/* Unit */}
     <div>
       <label className="label flex items-center gap-1">
         Unit <span className="text-error">*</span>
@@ -428,7 +434,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           placeholder="e.g., kg, piece, liter"
           value={data.unit}
           onChange={handleChange}
-          className={`input pl-10 w-full ${errors.unit ? 'border-error' : ''}`}
+          className={`input w-full ${errors.unit ? 'border-error' : ''}`}
+          style={{ paddingLeft: '2.5rem' }}
         />
       </div>
       {errors.unit && (
@@ -440,6 +447,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     </div>
   </div>
 </div>
+
+
 {/* Pricing & Inventory */}
 <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
