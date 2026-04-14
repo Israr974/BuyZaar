@@ -1,5 +1,5 @@
 
-export const baseUrl="https://buyzaar-0evg.onrender.com/"
+export const baseUrl="https://buyzaar-0evg.onrender.com"
 const summaryApi = () => {
   return {
 
