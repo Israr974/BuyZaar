@@ -97,6 +97,14 @@ const Header = () => {
     return null;
   }
 
+  // Logo component for consistent styling
+  const Logo = () => (
+    <h1 className="text-xl md:text-2xl font-extrabold">
+      <span className="text-blue-600">Buy</span>
+      <span className="text-orange-500">Zaar</span>
+    </h1>
+  );
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-card shadow-sm border-b border-border">
@@ -108,10 +116,7 @@ const Header = () => {
                   <img src={logo} alt="image" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
                 </div>
                 <div>
-                  <h1 className="text-xl md:text-2xl font-extrabold">
-                    <span className="text-blue-600">Buy</span>
-                    <span className="text-orange-500">Zaar</span>
-                  </h1>
+                  <Logo />
                   <p className="text-xs text-text-muted hidden lg:block">Just Buy It!</p>
                 </div>
               </Link>
@@ -256,8 +261,8 @@ const Header = () => {
               </button>
 
               <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-                <img src={logo} alt="image" className="w-7 h-7 object-contain" />
-                <h1 className="text-lg font-bold gradient-text">BuyZaar</h1>
+                <img src={logo} alt="image" className="w-8 h-8 object-contain" />
+                <Logo />
               </Link>
 
               <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -287,7 +292,6 @@ const Header = () => {
                   )}
                 </button>
 
-                {/* ✅ ADD LOGIN BUTTON FOR MOBILE - ONLY WHEN NOT LOGGED IN */}
                 {!user?.id && (
                   <button
                     onClick={() => navigate("/login")}

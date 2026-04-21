@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useRef,useEffect, useState, useCallback } from "react";
 import Axios from "../utils/Axios";
 import AxiosError from "../utils/AxiosToError";
 import summaryApi from "../common/summartApi";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+
 import { 
   Search, 
   Filter, 
@@ -46,12 +47,20 @@ const SearchPage = () => {
     category: true,
     stock: true
   });
+  const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const searchterm = searchParams.get("q") || "";
 
   const LIMIT = 12;
+
+  // Update input value when searchterm changes from URL
+  useEffect(() => {
+    setInputValue(searchterm);
+  }, [searchterm]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -169,7 +178,34 @@ const SearchPage = () => {
   };
 
   const handleBack = () => {
+    // Go back to previous page (home or wherever user came from)
     navigate(-1);
+  };
+
+  // Handle search input change with debounce and replace history
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value;
+    setInputValue(value);
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    setIsTyping(true);
+    
+    // Debounce: wait for user to stop typing
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      // Use replace to avoid creating history entries for every keystroke
+      navigate(`/search?q=${encodeURIComponent(value)}`, { replace: true });
+    }, 500);
+  };
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setInputValue("");
+    navigate('/search', { replace: true });
   };
 
   const toggleFilterSection = (section) => {
@@ -199,26 +235,28 @@ const SearchPage = () => {
             <button
               onClick={handleBack}
               className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
+              aria-label="Go back"
             >
               <ChevronLeft size={20} />
             </button>
             
             <div className="flex-1 relative">
-              
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search size={18} className="text-text-muted" />
+              </div>
               <input
                 type="text"
-                value={searchterm}
-                onChange={(e) => {
-                  navigate(`/search?q=${encodeURIComponent(e.target.value)}`);
-                }}
+                value={inputValue}
+                onChange={handleSearchInputChange}
                 placeholder="Search for products, brands, and categories..."
-                className="input pl-11 pr-12 py-2.5 w-full"
+                className="input pl-10 pr-12 py-2.5 w-full"
                 autoFocus
               />
-              {searchterm && (
+              {inputValue && (
                 <button
-                  onClick={() => navigate('/search')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text"
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text"
+                  aria-label="Clear search"
                 >
                   <X size={16} />
                 </button>
@@ -489,7 +527,7 @@ const SearchPage = () => {
                 </p>
                 {searchterm && (
                   <button
-                    onClick={() => navigate('/search')}
+                    onClick={handleClearSearch}
                     className="btn btn-primary"
                   >
                     Clear Search
@@ -531,7 +569,7 @@ const SearchPage = () => {
                 {!hasMore && data.length > 0 && (
                   <div className="text-center py-8 border-t border-border mt-8">
                     <p className="text-text-muted text-sm">
-                      🎉 You've seen all {totalResults} products
+                       You've seen all {totalResults} products
                     </p>
                   </div>
                 )}
