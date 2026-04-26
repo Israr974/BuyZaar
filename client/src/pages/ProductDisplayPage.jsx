@@ -340,7 +340,7 @@ const ProductDisplayPage = () => {
   if (!product) return null;
 
   const discountPercent = product.discount > 0
-    ? Math.round((product.discount / product.originalPrice) * 100)
+    ? Math.round(product.discount )
     : 0;
 
   return (

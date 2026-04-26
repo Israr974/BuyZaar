@@ -12,30 +12,47 @@ import {
   FaEye,
   FaTruck,
   FaCheck,
-  FaBolt,
-  FaFire,
-  FaPercent,
-  FaTag,
-  FaFilter,
-  FaSync,
   FaArrowRight
 } from "react-icons/fa";
-import { GiReceiveMoney } from "react-icons/gi";
-import { ShoppingBag, TrendingUp, Sparkles, Clock } from "lucide-react";
+import { Filter } from "lucide-react";
 
 const ProductByCatOnProductPage = ({ categoryId }) => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(null);
+  const [categoryName, setCategoryName] = useState("");
   const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
   const [sortBy, setSortBy] = useState("recommended");
   const [priceRange, setPriceRange] = useState([0, 100000]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(100000);
 
   const user = useSelector((state) => state.user);
   const cartitems = useSelector((state) => state.cart.cartitems);
+
+  // Fetch category name
+  const fetchCategoryName = async () => {
+    if (!categoryId) return;
+    
+    try {
+      const res = await Axios({
+        ...summaryApi().getAllCategory,
+        method: 'GET'
+      });
+      
+      if (res.data?.success) {
+        const foundCategory = res.data.data.find(cat => cat._id === categoryId);
+        if (foundCategory) {
+          setCategoryName(foundCategory.name);
+          setCategory(foundCategory);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch category name:", error);
+    }
+  };
 
   const fetchProductsByCategory = async () => {
     if (!categoryId) {
@@ -53,11 +70,11 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       if (res.data.success) {
         setProducts(res.data.data || []);
         setFilteredProducts(res.data.data || []);
-        if (res.data.category) {
-          setCategory(res.data.category);
-        } else if (res.data.data?.[0]?.category) {
-          setCategory(res.data.data[0].category);
-        }
+        
+        const prices = (res.data.data || []).map(p => p.price);
+        const maxProductPrice = Math.max(...prices, 0);
+        setMaxPrice(maxProductPrice);
+        setPriceRange([0, maxProductPrice]);
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -66,6 +83,13 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (categoryId) {
+      fetchCategoryName();
+      fetchProductsByCategory();
+    }
+  }, [categoryId]);
 
   const checkInCart = (productId) => {
     return cartitems.some(item => item.productId?._id === productId);
@@ -103,6 +127,12 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   };
 
   const toggleWishlist = (productId) => {
+    if (!user?.id) {
+      toast.error("Please login to add to wishlist");
+      navigate("/login");
+      return;
+    }
+    
     const newWishlisted = new Set(wishlistedProducts);
     if (newWishlisted.has(productId)) {
       newWishlisted.delete(productId);
@@ -117,6 +147,17 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   const handleProductClick = (product) => {
     const slug = `${product.name.toLowerCase().replace(/\s+/g, "-")}-${product._id}`;
     navigate(`/product/${slug}`);
+  };
+
+  const handleViewAll = () => {
+    if (categoryId) {
+      // Use categoryName from state or fallback to "category"
+      const name = categoryName || "category";
+      const slug = `${name.toLowerCase().replace(/\s+/g, "-")}-${categoryId}`;
+      navigate(`/${slug}/all-all`);
+    } else {
+      toast.error("Category not found");
+    }
   };
 
   const renderStars = (rating) => {
@@ -165,30 +206,25 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   };
 
   useEffect(() => {
-    if (categoryId) {
-      fetchProductsByCategory();
-    }
-  }, [categoryId]);
-
-  useEffect(() => {
     applyFilters();
   }, [sortBy, priceRange, products]);
 
-  const getPriceRangeText = () => {
-    if (priceRange[1] >= 100000) return `₹${priceRange[0].toLocaleString()}+`;
-    return `₹${priceRange[0].toLocaleString()} - ₹${priceRange[1].toLocaleString()}`;
+  const resetFilters = () => {
+    setSortBy("recommended");
+    setPriceRange([0, maxPrice]);
+    setShowFilters(false);
   };
 
   if (loading) {
     return (
-      <div className="py-8">
+      <div className="py-6 md:py-8 px-4 md:px-0">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-accent"></div>
-          <h2 className="text-xl font-display font-bold text-text">
+          <h2 className="text-lg md:text-xl font-display font-bold text-text">
             You May Also Like
           </h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
           {[...Array(6)].map((_, index) => (
             <div key={index} className="bg-card rounded-xl border border-border animate-pulse">
               <div className="aspect-square bg-bg-alt rounded-t-xl"></div>
@@ -208,14 +244,14 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
   }
 
   return (
-    <div className="py-8 fade-in">
+    <div className="py-6 md:py-8 px-4 md:px-0 fade-in">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+          <div className="w-1 h-6 md:h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
           <div>
-            <h2 className="text-xl font-display font-bold text-text">
-              {category ? `More from ${category.name}` : "You May Also Like"}
+            <h2 className="text-xl md:text-2xl font-display font-bold text-text">
+              {categoryName ? `More from ${categoryName}` : "You May Also Like"}
             </h2>
             <p className="text-xs text-text-muted mt-0.5">
               {filteredProducts.length} products available
@@ -224,11 +260,11 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
         </div>
 
         {/* Sort Dropdown */}
-        <div className="relative">
+        <div className="flex items-center gap-3">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="input py-2 pl-10 pr-8 text-sm cursor-pointer"
+            className="input py-2 pl-4 pr-8 text-sm cursor-pointer bg-card border-border rounded-lg focus:border-primary focus:outline-none"
           >
             <option value="recommended">Recommended</option>
             <option value="price-low">Price: Low to High</option>
@@ -237,18 +273,66 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
             <option value="rating">Top Rated</option>
             <option value="newest">Newest First</option>
           </select>
-          <TrendingUp size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
+
+          {/* Filter Toggle Button (Mobile) */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="md:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-alt text-text-muted hover:text-primary transition-colors"
+          >
+            <Filter size={16} />
+            Filter
+          </button>
         </div>
       </div>
 
+      {/* Filter Section */}
+      {(showFilters || window.innerWidth >= 768) && (
+        <div className="mb-6 p-4 bg-bg-alt rounded-xl border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-primary" />
+              <h3 className="font-semibold text-text">Filter by Price</h3>
+            </div>
+            {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+              <button
+                onClick={resetFilters}
+                className="text-xs text-primary hover:underline"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-text-muted">₹{priceRange[0].toLocaleString()}</span>
+              <span className="text-text-muted">₹{priceRange[1].toLocaleString()}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={maxPrice}
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+              className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+          </div>
+          
+          <div className="mt-3 flex justify-between text-xs text-text-muted">
+            <span>0</span>
+            <span>₹{maxPrice.toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+
       {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
         {filteredProducts.slice(0, 12).map((product) => {
           const isInCart = checkInCart(product._id);
           const isWishlisted = wishlistedProducts.has(product._id);
           const isOutOfStock = product.stock === 0;
           const discountPercent = product.discount > 0 
-            ? Math.round((product.discount / product.originalPrice) * 100) 
+            ? Math.round(product.discount) 
             : 0;
 
           return (
@@ -263,18 +347,24 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   onClick={() => handleProductClick(product)}
+                  loading="lazy"
                 />
 
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
-                  {product.discount > 0 && (
-                    <span className="bg-accent text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {discountPercent > 0 && (
+                    <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       -{discountPercent}%
                     </span>
                   )}
                   {product.stock > 0 && product.stock < 10 && (
                     <span className="bg-warning text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       Only {product.stock} left
+                    </span>
+                  )}
+                  {isOutOfStock && (
+                    <span className="bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      Out of Stock
                     </span>
                   )}
                 </div>
@@ -327,7 +417,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
               {/* Product Info */}
               <div className="p-3">
                 <h4
-                  className="text-sm font-semibold text-text line-clamp-2 min-h-[40px] cursor-pointer hover:text-primary transition-colors"
+                  className="text-xs md:text-sm font-semibold text-text line-clamp-2 min-h-[32px] md:min-h-[40px] cursor-pointer hover:text-primary transition-colors"
                   onClick={() => handleProductClick(product)}
                 >
                   {product.name}
@@ -338,7 +428,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
                   <div className="flex items-center gap-0.5">
                     {renderStars(product.rating || 4)}
                   </div>
-                  <span className="text-xs text-text-muted">
+                  <span className="text-[10px] md:text-xs text-text-muted">
                     ({product.reviewCount || 0})
                   </span>
                 </div>
@@ -346,11 +436,11 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
                 {/* Price */}
                 <div className="mt-2">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-lg font-bold gradient-text">
+                    <span className="text-sm md:text-lg font-bold gradient-text">
                       ₹{product.price?.toLocaleString()}
                     </span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-xs text-text-muted line-through">
+                      <span className="text-[10px] md:text-xs text-text-muted line-through">
                         ₹{product.originalPrice?.toLocaleString()}
                       </span>
                     )}
@@ -358,7 +448,7 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
                 </div>
 
                 {/* Free Delivery Badge */}
-                <div className="flex items-center gap-1 mt-2 text-xs text-text-muted">
+                <div className="flex items-center gap-1 mt-2 text-[10px] md:text-xs text-text-muted">
                   <FaTruck size={10} />
                   <span>Free Delivery</span>
                 </div>
@@ -369,11 +459,11 @@ const ProductByCatOnProductPage = ({ categoryId }) => {
       </div>
 
       {/* View More Button */}
-      {filteredProducts.length > 12 && category && (
+      {filteredProducts.length > 12 && (
         <div className="text-center mt-8">
           <button
-            onClick={() => navigate(`/category/${category.slug || category._id}`)}
-            className="btn btn-outline px-6 py-2 rounded-lg flex items-center gap-2 mx-auto"
+            onClick={handleViewAll}
+            className="btn btn-outline px-4 md:px-6 py-2 rounded-lg flex items-center gap-2 mx-auto text-sm md:text-base"
           >
             View All {filteredProducts.length} Products
             <FaArrowRight size={12} />

@@ -241,9 +241,7 @@ const SearchPage = () => {
             </button>
             
             <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search size={18} className="text-text-muted" />
-              </div>
+              
               <input
                 type="text"
                 value={inputValue}

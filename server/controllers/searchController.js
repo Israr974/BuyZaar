@@ -19,7 +19,7 @@ export const searchProducts = async (req, res) => {
       inStock = ''
     } = req.query;
 
-    console.log(' Search query:', { q, page, limit, sortBy, category });
+    
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -51,7 +51,7 @@ export const searchProducts = async (req, res) => {
       query.stock = { $gt: 0 };
     }
 
-    console.log('Final query:', JSON.stringify(query, null, 2));
+    
 
     
     let sort = {};
@@ -94,18 +94,12 @@ export const searchProducts = async (req, res) => {
    
     const total = await Product.countDocuments(query);
 
-    console.log(`Found ${products.length} products out of ${total}`);
+    ;
 
     
     const categories = await Category.find().select('name').lean();
 
 
-    // const enhancedProducts = products.map(product => ({
-    //   ...product,
-    //   finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
-    // }));
-
-// Get review counts for products
 
 const productIds = products.map(p => p._id);
 const reviewCounts = await Review.aggregate([
