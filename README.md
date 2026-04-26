@@ -1,11 +1,10 @@
-# 🛍️ BuyZaar - Complete MERN E-Commerce Platform
+#  BuyZaar - Complete MERN E-Commerce Platform
 
 A production-ready, full-featured e-commerce website built with the MERN stack (MongoDB, Express.js, React, Node.js), featuring Razorpay payments, Cloudinary media management, and Resend email integration. Deployed on Vercel (frontend), Render (backend), and MongoDB Atlas (database).
 
 ##  Live URLs (Update after deployment)
-- **Frontend:** https://your-app.vercel.app
-- **Backend API:** https://your-backend.onrender.com/api
-- **Health Check:** https://your-backend.onrender.com/health
+- **Frontend:** https://buy-zaar974.vercel.app
+- **Backend API:** https://buyzaar-0evg.onrender.com
 
 ## Table of Contents
 - [Tech Stack](#tech-stack)
