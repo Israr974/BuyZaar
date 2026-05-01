@@ -1,5 +1,3 @@
-
-
 import cloudinary from "../config/cloudinary.js";
 import multer from "multer";
 
@@ -61,7 +59,6 @@ export const uploadImage = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Upload Error:", error);
     return res.status(500).json({
       message: error.message || "Image upload failed",
       success: false,
@@ -69,4 +66,3 @@ export const uploadImage = async (req, res) => {
     });
   }
 };
-

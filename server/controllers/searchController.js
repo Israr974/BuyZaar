@@ -1,10 +1,7 @@
-
-
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import SubCategory from '../models/SubCategory.js';
 import Review from "../models/Review.js";
-
 
 export const searchProducts = async (req, res) => {
   try {
@@ -19,13 +16,10 @@ export const searchProducts = async (req, res) => {
       inStock = ''
     } = req.query;
 
-    
-
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-   
     let query = { publish: true };
 
     if (q && q.trim()) {
@@ -35,7 +29,6 @@ export const searchProducts = async (req, res) => {
       ];
     }
 
-   
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = parseFloat(minPrice);
@@ -46,14 +39,10 @@ export const searchProducts = async (req, res) => {
       query.category = category;
     }
 
-   
     if (inStock === 'true') {
       query.stock = { $gt: 0 };
     }
 
-    
-
-    
     let sort = {};
     switch(sortBy) {
       case 'price-low':
@@ -75,7 +64,6 @@ export const searchProducts = async (req, res) => {
         sort = { createdAt: -1 };
     }
 
-
     const products = await Product.find(query)
       .sort(sort)
       .skip(skip)
@@ -91,35 +79,29 @@ export const searchProducts = async (req, res) => {
       })
       .lean();
 
-   
     const total = await Product.countDocuments(query);
 
-    ;
-
-    
     const categories = await Category.find().select('name').lean();
 
+    const productIds = products.map(p => p._id);
+    const reviewCounts = await Review.aggregate([
+      { $match: { product: { $in: productIds }, status: "approved" } },
+      { $group: { _id: "$product", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } }
+    ]);
 
+    const reviewMap = {};
+    reviewCounts.forEach(rc => {
+      reviewMap[rc._id] = { count: rc.count, avgRating: rc.avgRating };
+    });
 
-const productIds = products.map(p => p._id);
-const reviewCounts = await Review.aggregate([
-  { $match: { product: { $in: productIds }, status: "approved" } },
-  { $group: { _id: "$product", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } }
-]);
+    const enhancedProducts = products.map(product => ({
+      ...product,
+      reviewCount: reviewMap[product._id]?.count || 0,
+      rating: reviewMap[product._id]?.avgRating ? parseFloat(reviewMap[product._id].avgRating.toFixed(1)) : 0,
+      finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
+    }));
 
-const reviewMap = {};
-reviewCounts.forEach(rc => {
-  reviewMap[rc._id] = { count: rc.count, avgRating: rc.avgRating };
-});
-
-const enhancedProducts = products.map(product => ({
-  ...product,
-  reviewCount: reviewMap[product._id]?.count || 0,
-  rating: reviewMap[product._id]?.avgRating ? parseFloat(reviewMap[product._id].avgRating.toFixed(1)) : 0,
-  finalPrice: product.price - (product.price * ((product.discount || 0) / 100))
-}));
-
-    res.json({
+    return res.status(200).json({
       success: true,
       message: products.length > 0 ? 'Products found' : 'No products found',
       data: enhancedProducts,
@@ -136,13 +118,10 @@ const enhancedProducts = products.map(product => ({
     });
 
   } catch (error) {
-    console.error(' Search error:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error searching products',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -152,7 +131,7 @@ export const getSearchSuggestions = async (req, res) => {
     const { q = '' } = req.query;
 
     if (!q.trim()) {
-      return res.json({
+      return res.status(200).json({
         success: true,
         data: {
           products: [],
@@ -162,7 +141,6 @@ export const getSearchSuggestions = async (req, res) => {
       });
     }
 
-  
     const products = await Product.find({
       publish: true,
       $or: [
@@ -174,7 +152,6 @@ export const getSearchSuggestions = async (req, res) => {
     .limit(5)
     .lean();
 
- 
     const categories = await Category.find({
       name: { $regex: q, $options: 'i' }
     })
@@ -182,13 +159,11 @@ export const getSearchSuggestions = async (req, res) => {
     .limit(3)
     .lean();
 
-  
     const enhancedProducts = products.map(product => ({
       ...product,
       finalPrice: product.price - (product.price * (product.discount / 100))
     }));
 
-  
     const suggestions = [
       `${q}`,
       `${q} sale`,
@@ -197,7 +172,7 @@ export const getSearchSuggestions = async (req, res) => {
       `cheap ${q}`
     ];
 
-    res.json({
+    return res.status(200).json({
       success: true,
       data: {
         products: enhancedProducts,
@@ -207,18 +182,15 @@ export const getSearchSuggestions = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Suggestions error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error getting search suggestions'
     });
   }
 };
 
-
 export const getPopularSearches = async (req, res) => {
   try {
-    
     const popularSearches = [
       { term: 'Smartphones', count: 1250 },
       { term: 'Laptops', count: 980 },
@@ -230,20 +202,18 @@ export const getPopularSearches = async (req, res) => {
       { term: 'Kitchen Appliances', count: 450 }
     ];
 
-    res.json({
+    return res.status(200).json({
       success: true,
       data: popularSearches
     });
 
   } catch (error) {
-    console.error('Popular searches error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error getting popular searches'
     });
   }
 };
-
 
 export const getSearchFilters = async (req, res) => {
   try {
@@ -257,7 +227,6 @@ export const getSearchFilters = async (req, res) => {
       ];
     }
 
-    
     const priceStats = await Product.aggregate([
       { $match: query },
       {
@@ -270,7 +239,6 @@ export const getSearchFilters = async (req, res) => {
       }
     ]);
 
-    
     const categories = await Category.aggregate([
       {
         $lookup: {
@@ -295,7 +263,7 @@ export const getSearchFilters = async (req, res) => {
       { $limit: 10 }
     ]);
 
-    res.json({
+    return res.status(200).json({
       success: true,
       data: {
         priceRange: priceStats[0] || { 
@@ -308,14 +276,12 @@ export const getSearchFilters = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Filters error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error getting search filters'
     });
   }
 };
-
 
 export const getSimilarProducts = async (req, res) => {
   try {
@@ -345,20 +311,18 @@ export const getSimilarProducts = async (req, res) => {
     .limit(parseInt(limit))
     .lean();
 
-
     const enhancedProducts = similarProducts.map(p => ({
       ...p,
       finalPrice: p.price - (p.price * (p.discount / 100))
     }));
 
-    res.json({
+    return res.status(200).json({
       success: true,
       data: enhancedProducts
     });
 
   } catch (error) {
-    console.error('Similar products error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error getting similar products'
     });

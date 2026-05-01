@@ -3,9 +3,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-
 if (!process.env.MONGODB_URI) {
-  throw new Error("Please provide MONGODB_URI in your .env file");
+  throw new Error("MONGODB_URI is not defined in environment variables");
 }
 
 async function connectDB() {
@@ -14,10 +13,10 @@ async function connectDB() {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
-    process.exit(1); 
+    // Log to error tracking service in production instead of console
+    console.error("MongoDB connection failed:", error.message);
+    throw error; // Throw instead of exiting to let app handle graceful shutdown
   }
 }
 

@@ -1,14 +1,38 @@
 const verifyEmail = ({ name, url }) => {
   return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-      <p>Dear ${name},</p>
-      <p>Thank you for registering on BuyZaar.</p>
-      <p>Please verify your email by clicking the link below:</p>
-      <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;">
-        Verify Email
-      </a>
-      <p>If you did not register, please ignore this email.</p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
+          <h1 style="margin: 0; color: #333333;">BuyZaar</h1>
+        </div>
+        
+        <div style="padding: 30px 20px;">
+          <p style="font-size: 16px; color: #333333;">Dear <strong>${name}</strong>,</p>
+          <p style="font-size: 16px; color: #333333;">Thank you for registering on BuyZaar!</p>
+          <p style="font-size: 16px; color: #333333;">Please verify your email address to complete your registration and start shopping.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${url}" style="display: inline-block; padding: 12px 30px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Verify Email Address
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; color: #666666;">⚠️ This link will expire in 24 hours.</p>
+          <p style="font-size: 14px; color: #666666;">If you did not register on BuyZaar, please ignore this email.</p>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; border-top: 1px solid #f0f0f0; font-size: 12px; color: #999999;">
+          <p>&copy; 2024 BuyZaar. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
 };
 

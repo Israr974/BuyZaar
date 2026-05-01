@@ -1,11 +1,539 @@
+// import React, { useState, useEffect } from "react";
+// import { useSelector } from "react-redux";
+// import { 
+//   Package, Calendar, CreditCard, 
+//   Truck, CheckCircle, XCircle, Clock,
+//   ChevronDown, ChevronUp, ExternalLink, 
+//   ShoppingBag, TrendingUp,
+//   Download, Eye
+// } from "lucide-react";
+// import summaryApi from "../common/summartApi";
+// import Axios from "../utils/Axios";
+// import OrderTrackingMap from "../components/OrderTrackingMap";
+// import { generateInvoice } from "../utils/generateInvoice";
+
+// const MyOrders = () => {
+//   const user = useSelector((state) => state.user);
+//   const [orders, setOrders] = useState([]);
+//   const [expandedOrder, setExpandedOrder] = useState(null);
+//   const [activeTab, setActiveTab] = useState({});
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+
+//   const fetchOrders = async () => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+
+//       const token = localStorage.getItem("token");
+
+//       const response = await Axios({
+//         ...summaryApi().getMyOrders,
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+
+//       let ordersData = [];
+//       if (response.data && Array.isArray(response.data)) {
+//         ordersData = response.data;
+//       } else if (response.data?.data && Array.isArray(response.data.data)) {
+//         ordersData = response.data.data;
+//       } else if (response.data?.orders && Array.isArray(response.data.orders)) {
+//         ordersData = response.data.orders;
+//       }
+
+//       setOrders(ordersData);
+      
+//     } catch (err) {
+//       console.error("Failed to fetch orders", err);
+//       setError("Failed to load orders. Please try again.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (user?.id) {
+//       fetchOrders();
+//     }
+//   }, [user.id]);
+
+//   const toggleOrder = (orderId) => {
+//     setExpandedOrder(expandedOrder === orderId ? null : orderId);
+//     if (expandedOrder !== orderId) {
+//       setActiveTab(prev => ({ ...prev, [orderId]: "items" }));
+//     }
+//   };
+
+//   const setOrderTab = (orderId, tab) => {
+//     setActiveTab(prev => ({ ...prev, [orderId]: tab }));
+//   };
+
+//   const getStatusColor = (status) => {
+//     switch (status?.toLowerCase()) {
+//       case "delivered":
+//         return "bg-success/10 text-success border-success/20";
+//       case "shipped":
+//         return "bg-blue-100 text-blue-800 border-blue-200";
+//       case "processing":
+//         return "bg-warning/10 text-warning border-warning/20";
+//       case "cancelled":
+//         return "bg-error/10 text-error border-error/20";
+//       default:
+//         return "bg-gray-100 text-gray-800 border-gray-200";
+//     }
+//   };
+
+//   const getStatusIcon = (status) => {
+//     switch (status?.toLowerCase()) {
+//       case "delivered":
+//         return <CheckCircle size={14} />;
+//       case "shipped":
+//         return <Truck size={14} />;
+//       case "processing":
+//         return <Clock size={14} />;
+//       case "cancelled":
+//         return <XCircle size={14} />;
+//       default:
+//         return <Package size={14} />;
+//     }
+//   };
+
+//   const formatDate = (dateString) => {
+//     if (!dateString) return "N/A";
+//     try {
+//       const date = new Date(dateString);
+//       if (isNaN(date.getTime())) return "N/A";
+//       return date.toLocaleDateString('en-IN', {
+//         day: 'numeric',
+//         month: 'short',
+//         year: 'numeric'
+//       });
+//     } catch {
+//       return "N/A";
+//     }
+//   };
+
+//   const formatDateTime = (dateString) => {
+//     if (!dateString) return "N/A";
+//     try {
+//       const date = new Date(dateString);
+//       if (isNaN(date.getTime())) return "N/A";
+//       return date.toLocaleDateString('en-IN', {
+//         day: 'numeric',
+//         month: 'short',
+//         year: 'numeric',
+//         hour: '2-digit',
+//         minute: '2-digit'
+//       });
+//     } catch {
+//       return "N/A";
+//     }
+//   };
+
+//   const formatCreatedAt = (order) => {
+//     const dateString = order.createdAt || order.created || order.date || order.orderDate;
+//     return formatDateTime(dateString);
+//   };
+
+//   const calculateOrderTotal = (order) => {
+//     if (order.items?.length) {
+//       return order.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+//     }
+//     return order.totalAmount || order.total || order.amount || 0;
+//   };
+
+//   const getPaymentMethod = (order) => {
+//     if (order.paymentMethod) return order.paymentMethod;
+//     if (order.payment?.method) return order.payment.method;
+//     return "COD";
+//   };
+
+//   const getOrderStatus = (order) => {
+//     return order.status || order.orderStatus || "Processing";
+//   };
+
+//   if (loading) {
+//     return (
+//       <div className="min-h-screen bg-bg p-4 md:p-6">
+//         <div className="container-narrow">
+//           <div className="flex items-center justify-center min-h-[400px]">
+//             <div className="text-center">
+//               <div className="w-12 h-12 mb-4 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+//               <p className="text-text-muted">Loading your orders...</p>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="min-h-screen bg-bg p-4 md:p-6">
+//         <div className="container-narrow">
+//           <div className="bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
+//             <div className="w-20 h-20 mx-auto rounded-full bg-error/10 flex items-center justify-center mb-4">
+//               <XCircle className="w-10 h-10 text-error" />
+//             </div>
+//             <h2 className="text-2xl font-display font-bold text-text mb-3">Error Loading Orders</h2>
+//             <p className="text-text-muted mb-6">{error}</p>
+//             <button onClick={fetchOrders} className="btn btn-primary">
+//               Try Again
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (orders.length === 0) {
+//     return (
+//       <div className="min-h-screen bg-bg p-4 md:p-6">
+//         <div className="container-narrow">
+//           <div className="bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
+//             <div className="w-24 h-24 mx-auto rounded-full bg-bg-alt flex items-center justify-center mb-6">
+//               <ShoppingBag className="w-12 h-12 text-text-muted" />
+//             </div>
+//             <h2 className="text-2xl font-display font-bold text-text mb-3">No Orders Yet</h2>
+//             <p className="text-text-muted mb-8 max-w-md mx-auto">
+//               You haven't placed any orders yet. Start shopping to see your order history here.
+//             </p>
+//             <button onClick={() => window.location.href = '/'} className="btn btn-primary px-8 py-3">
+//               Start Shopping
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   const totalSpent = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+//   const deliveredCount = orders.filter(o => getOrderStatus(o).toLowerCase() === "delivered").length;
+
+//   return (
+//     <div className="min-h-screen bg-bg p-3 md:p-5 lg:p-8">
+//       <div className="container-narrow max-w-7xl mx-auto">
+//         {/* Header */}
+//         <div className="mb-6 md:mb-8">
+//           <div className="flex items-center gap-3 mb-2">
+//             <div className="w-1 h-6 md:h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+//             <h1 className="text-2xl md:text-3xl font-display font-bold text-text">My Orders</h1>
+//           </div>
+//           <p className="text-text-muted text-sm md:text-base ml-4">
+//             Track and manage all your orders in one place
+//           </p>
+//           <div className="flex flex-wrap items-center gap-3 mt-3 ml-4">
+//             <span className="badge bg-primary/10 text-primary text-xs md:text-sm">
+//               {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
+//             </span>
+//             <span className="text-xs text-text-muted flex items-center gap-1">
+//               <Calendar size={12} />
+//               Last updated: {formatDate(new Date())}
+//             </span>
+//           </div>
+//         </div>
+
+//         {/* Stats Cards */}
+//         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+//           <div className="bg-card rounded-xl border border-border p-3 md:p-4 hover:shadow-md transition">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-text-muted text-xs md:text-sm">Total Orders</p>
+//                 <p className="text-xl md:text-2xl font-bold text-text">{orders.length}</p>
+//               </div>
+//               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+//                 <Package className="w-5 h-5 text-primary" />
+//               </div>
+//             </div>
+//           </div>
+          
+//           <div className="bg-card rounded-xl border border-border p-3 md:p-4 hover:shadow-md transition">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-text-muted text-xs md:text-sm">Total Spent</p>
+//                 <p className="text-xl md:text-2xl font-bold text-text">₹{totalSpent.toLocaleString('en-IN')}</p>
+//               </div>
+//               <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
+//                 <TrendingUp className="w-5 h-5 text-success" />
+//               </div>
+//             </div>
+//           </div>
+          
+//           <div className="bg-card rounded-xl border border-border p-3 md:p-4 hover:shadow-md transition">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-text-muted text-xs md:text-sm">Delivered</p>
+//                 <p className="text-xl md:text-2xl font-bold text-text">{deliveredCount}</p>
+//               </div>
+//               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+//                 <CheckCircle className="w-5 h-5 text-blue-600" />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Orders List */}
+//         <div className="space-y-3 md:space-y-4">
+//           {orders.map((order, index) => {
+//             const orderTotal = calculateOrderTotal(order);
+//             const itemCount = order.items?.reduce((total, item) => total + item.quantity, 0) || 0;
+//             const orderDate = formatCreatedAt(order);
+//             const orderId = order._id || index;
+//             const orderNumber = order.orderNumber || `ORD${order._id?.slice(-6) || `${1000 + index}`}`;
+//             const status = getOrderStatus(order);
+//             const paymentMethod = getPaymentMethod(order);
+//             const currentTab = activeTab[orderId] || "items";
+            
+//             return (
+//               <div
+//                 key={orderId}
+//                 className="bg-card rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition-all duration-300"
+//               >
+//                 {/* Order Header */}
+//                 <div 
+//                   className="p-3 md:p-5 cursor-pointer hover:bg-bg-alt/50 transition-colors"
+//                   onClick={() => toggleOrder(orderId)}
+//                 >
+//                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+//                     <div className="flex-1">
+//                       <div className="flex items-center gap-2 md:gap-3 mb-1">
+//                         <div className="p-1.5 rounded-lg bg-primary/10">
+//                           <Package className="w-4 h-4 text-primary" />
+//                         </div>
+//                         <div>
+//                           <h3 className="font-semibold text-text text-sm md:text-base">
+//                             Order #{orderNumber}
+//                           </h3>
+//                           <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+//                             <Calendar size={10} />
+//                             {orderDate}
+//                           </p>
+//                         </div>
+//                       </div>
+
+//                       <div className="flex flex-wrap gap-2 mt-2">
+//                         <span className={`badge border text-xs md:text-sm px-2 py-0.5 rounded-full flex items-center gap-1 ${getStatusColor(status)}`}>
+//                           {getStatusIcon(status)}
+//                           {status}
+//                         </span>
+//                         <span className="badge bg-gray-100 text-gray-700 border border-gray-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+//                           <CreditCard size={12} />
+//                           {paymentMethod}
+//                         </span>
+//                       </div>
+//                     </div>
+
+//                     <div className="flex items-center justify-between sm:justify-end gap-4">
+//                       <div className="text-right">
+//                         <p className="text-base md:text-xl font-bold gradient-text">
+//                           ₹{orderTotal.toLocaleString('en-IN')}
+//                         </p>
+//                         <p className="text-xs text-text-muted">
+//                           {itemCount} item{itemCount !== 1 ? 's' : ''}
+//                         </p>
+//                       </div>
+//                       <div className="text-text-muted">
+//                         {expandedOrder === orderId ? 
+//                           <ChevronUp size={18} /> : 
+//                           <ChevronDown size={18} />
+//                         }
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* Order Details Expanded */}
+//                 {expandedOrder === orderId && (
+//                   <div className="border-t border-border">
+//                     {/* Tabs */}
+//                     <div className="flex border-b border-border bg-bg-alt/50">
+//                       <button
+//                         onClick={() => setOrderTab(orderId, "items")}
+//                         className={`px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors ${
+//                           currentTab === "items"
+//                             ? "text-primary border-b-2 border-primary"
+//                             : "text-text-muted hover:text-text"
+//                         }`}
+//                       >
+//                         <span className="flex items-center gap-2">
+//                           <Package size={14} />
+//                           Order Items
+//                         </span>
+//                       </button>
+//                       <button
+//                         onClick={() => setOrderTab(orderId, "tracking")}
+//                         className={`px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors ${
+//                           currentTab === "tracking"
+//                             ? "text-primary border-b-2 border-primary"
+//                             : "text-text-muted hover:text-text"
+//                         }`}
+//                       >
+//                         <span className="flex items-center gap-2">
+//                           <Truck size={14} />
+//                           Track Order
+//                         </span>
+//                       </button>
+//                     </div>
+
+//                     {/* Tab Content */}
+//                     <div className="p-3 md:p-5">
+//                       {currentTab === "items" ? (
+//                         <div className="space-y-6">
+//                           {/* Order Items */}
+//                           <div>
+//                             <h4 className="font-semibold text-text mb-3 flex items-center gap-2 text-sm">
+//                               <ShoppingBag size={16} className="text-primary" />
+//                               Order Items
+//                             </h4>
+//                             <div className="space-y-3">
+//                               {order.items?.map((item, idx) => (
+//                                 <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
+//                                   {item.image ? (
+//                                     <img
+//                                       src={item.image}
+//                                       alt={item.name}
+//                                       className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg border"
+//                                     />
+//                                   ) : (
+//                                     <div className="w-12 h-12 rounded-lg border bg-bg-alt flex items-center justify-center">
+//                                       <Package className="w-6 h-6 text-text-muted" />
+//                                     </div>
+//                                   )}
+//                                   <div className="flex-1">
+//                                     <p className="font-medium text-text text-sm md:text-base">{item.name}</p>
+//                                     <p className="text-xs text-text-muted">Quantity: {item.quantity}</p>
+//                                     <p className="text-xs text-text-muted">₹{item.price?.toLocaleString('en-IN')} each</p>
+//                                   </div>
+//                                   <div className="text-right">
+//                                     <p className="font-semibold gradient-text text-sm md:text-base">
+//                                       ₹{(item.quantity * item.price)?.toLocaleString('en-IN')}
+//                                     </p>
+//                                   </div>
+//                                 </div>
+//                               ))}
+//                             </div>
+//                           </div>
+
+//                           {/* Payment Details */}
+//                           <div>
+//                             <h4 className="font-semibold text-text mb-3 flex items-center gap-2 text-sm">
+//                               <CreditCard size={16} className="text-primary" />
+//                               Payment Details
+//                             </h4>
+//                             <div className="p-3 md:p-4 rounded-lg bg-card border border-border">
+//                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//                                 <div>
+//                                   <p className="text-xs text-text-muted">Payment Method</p>
+//                                   <p className="font-medium text-text text-sm md:text-base">
+//                                     {paymentMethod}
+//                                   </p>
+//                                 </div>
+//                               </div>
+//                             </div>
+//                           </div>
+
+//                           {/* Order Summary */}
+//                           <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg p-4 border border-border">
+//                             <h4 className="font-semibold text-text mb-3 text-sm">Order Summary</h4>
+//                             <div className="space-y-2">
+//                               {order.items?.map((item, idx) => (
+//                                 <div key={idx} className="flex justify-between text-sm">
+//                                   <span className="text-text-muted">
+//                                     {item.name} × {item.quantity}
+//                                   </span>
+//                                   <span className="text-text">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+//                                 </div>
+//                               ))}
+                              
+//                               <div className="border-t border-border pt-3 mt-3">
+//                                 <div className="flex justify-between text-sm">
+//                                   <span className="text-text-muted">Subtotal</span>
+//                                   <span className="text-text">₹{orderTotal.toLocaleString('en-IN')}</span>
+//                                 </div>
+//                                 <div className="flex justify-between text-sm">
+//                                   <span className="text-text-muted">Shipping</span>
+//                                   <span className="text-success">Free</span>
+//                                 </div>
+//                                 <div className="flex justify-between font-bold text-base mt-3 pt-3 border-t border-border">
+//                                   <span className="text-text">Total</span>
+//                                   <span className="gradient-text">₹{orderTotal.toLocaleString('en-IN')}</span>
+//                                 </div>
+//                               </div>
+//                             </div>
+//                           </div>
+
+//                           {/* Action Buttons */}
+//                           <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+//                             <button
+//                               onClick={() => handleDownloadInvoice(order)}
+//                               className="btn btn-outline flex items-center gap-2 text-sm px-4 py-2"
+//                             >
+//                               <Download size={16} />
+//                               Invoice
+//                             </button>
+//                             <button
+//                               onClick={() => setOrderTab(orderId, "tracking")}
+//                               className="btn btn-primary flex items-center gap-2 text-sm px-4 py-2"
+//                             >
+//                               <Truck size={16} />
+//                               Track Order
+//                             </button>
+//                             {status?.toLowerCase() === "delivered" && (
+//                               <button 
+//                                 onClick={() => window.location.href = '/'}
+//                                 className="btn btn-secondary flex items-center gap-2 text-sm px-4 py-2"
+//                               >
+//                                 <ShoppingBag size={16} />
+//                                 Buy Again
+//                               </button>
+//                             )}
+//                           </div>
+//                         </div>
+//                       ) : (
+//                         <OrderTrackingMap order={order} />
+//                       )}
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             );
+//           })}
+//         </div>
+
+//         {/* Help Section */}
+//         <div className="mt-8 p-5 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-border">
+//           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+//             <div className="flex items-center gap-3">
+//               <div className="p-2 rounded-full bg-primary/10">
+//                 <Package className="w-5 h-5 text-primary" />
+//               </div>
+//               <div className="text-center sm:text-left">
+//                 <h4 className="font-semibold text-text">Need Help?</h4>
+//                 <p className="text-sm text-text-muted">Contact our support team for assistance</p>
+//               </div>
+//             </div>
+//             <button className="btn btn-outline flex items-center gap-2 px-4 py-2 text-sm">
+//               <ExternalLink size={14} />
+//               Contact Support
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default MyOrders;
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { 
-  Package, Calendar, MapPin, CreditCard, 
+  Package, Calendar, CreditCard, 
   Truck, CheckCircle, XCircle, Clock,
   ChevronDown, ChevronUp, ExternalLink, 
-  Receipt, Eye, ShoppingBag, TrendingUp,
-  Download, Navigation
+  ShoppingBag, TrendingUp,
+  Download, Eye
 } from "lucide-react";
 import summaryApi from "../common/summartApi";
 import Axios from "../utils/Axios";
@@ -25,25 +553,27 @@ const MyOrders = () => {
       setLoading(true);
       setError(null);
 
+      const token = localStorage.getItem("token");
+
       const response = await Axios({
         ...summaryApi().getMyOrders,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
+      let ordersData = [];
       if (response.data && Array.isArray(response.data)) {
-        setOrders(response.data);
-      } else if (response.data && response.data.data) {
-        setOrders(response.data.data);
-      } else if (response.data && response.data.orders) {
-        setOrders(response.data.orders);
-      } else {
-        setOrders([]);
+        ordersData = response.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        ordersData = response.data.data;
+      } else if (response.data?.orders && Array.isArray(response.data.orders)) {
+        ordersData = response.data.orders;
       }
+
+      setOrders(ordersData);
       
     } catch (err) {
-      console.error("Failed to fetch orders", err);
       setError("Failed to load orders. Please try again.");
     } finally {
       setLoading(false);
@@ -58,7 +588,6 @@ const MyOrders = () => {
 
   const toggleOrder = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
-    // Reset active tab when expanding
     if (expandedOrder !== orderId) {
       setActiveTab(prev => ({ ...prev, [orderId]: "items" }));
     }
@@ -68,19 +597,20 @@ const MyOrders = () => {
     setActiveTab(prev => ({ ...prev, [orderId]: tab }));
   };
 
+  const handleDownloadInvoice = (order) => {
+    generateInvoice(order);
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "delivered":
-      case "success":
-      case "paid":
-        return "bg-success/10 text-success border-success/20";
+        return "bg-green-50 text-green-700 border-green-200";
       case "shipped":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "processing":
-        return "bg-warning/10 text-warning border-warning/20";
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
       case "cancelled":
-      case "failed":
-        return "bg-error/10 text-error border-error/20";
+        return "bg-red-50 text-red-700 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -89,15 +619,12 @@ const MyOrders = () => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case "delivered":
-      case "paid":
         return <CheckCircle size={14} />;
       case "shipped":
         return <Truck size={14} />;
       case "processing":
-      case "pending":
         return <Clock size={14} />;
       case "cancelled":
-      case "failed":
         return <XCircle size={14} />;
       default:
         return <Package size={14} />;
@@ -106,37 +633,32 @@ const MyOrders = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "N/A";
-      
       return date.toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
       });
-    } catch (error) {
+    } catch {
       return "N/A";
     }
   };
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
-    
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "N/A";
-      
       return date.toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+        minute: '2-digit'
       });
-    } catch (error) {
+    } catch {
       return "N/A";
     }
   };
@@ -147,24 +669,30 @@ const MyOrders = () => {
   };
 
   const calculateOrderTotal = (order) => {
-    if (order.items && Array.isArray(order.items)) {
+    if (order.items?.length) {
       return order.items.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
-    return 0;
+    return order.totalAmount || order.total || order.amount || 0;
   };
 
-  const handleDownloadInvoice = (order) => {
-    generateInvoice(order, user);
+  const getPaymentMethod = (order) => {
+    if (order.paymentMethod) return order.paymentMethod;
+    if (order.payment?.method) return order.payment.method;
+    return "COD";
+  };
+
+  const getOrderStatus = (order) => {
+    return order.status || order.orderStatus || "Processing";
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg p-4 md:p-6 fade-in">
-        <div className="container-narrow">
+      <div className="min-h-screen bg-white p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="spinner w-12 h-12 mb-4"></div>
-              <p className="text-text-muted">Loading your orders...</p>
+              <div className="w-12 h-12 mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-500">Loading your orders...</p>
             </div>
           </div>
         </div>
@@ -174,15 +702,15 @@ const MyOrders = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-bg p-4 md:p-6 fade-in">
-        <div className="container-narrow">
-          <div className="bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-error/10 flex items-center justify-center mb-4">
-              <XCircle className="w-10 h-10 text-error" />
+      <div className="min-h-screen bg-white p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+            <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <XCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h2 className="text-2xl font-display font-bold text-text mb-3">Error Loading Orders</h2>
-            <p className="text-text-muted mb-6">{error}</p>
-            <button onClick={fetchOrders} className="btn btn-primary">
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">Error Loading Orders</h2>
+            <p className="text-gray-500 mb-6">{error}</p>
+            <button onClick={fetchOrders} className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 rounded-lg font-medium">
               Try Again
             </button>
           </div>
@@ -193,17 +721,17 @@ const MyOrders = () => {
 
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen bg-bg p-4 md:p-6 fade-in">
-        <div className="container-narrow">
-          <div className="bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
-            <div className="w-24 h-24 mx-auto rounded-full bg-bg-alt flex items-center justify-center mb-6">
-              <ShoppingBag className="w-12 h-12 text-text-muted" />
+      <div className="min-h-screen bg-white p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-6">
+              <ShoppingBag className="w-12 h-12 text-gray-500" />
             </div>
-            <h2 className="text-2xl font-display font-bold text-text mb-3">No Orders Yet</h2>
-            <p className="text-text-muted mb-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">No Orders Yet</h2>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">
               You haven't placed any orders yet. Start shopping to see your order history here.
             </p>
-            <button onClick={() => window.location.href = '/'} className="btn btn-primary px-8 py-3">
+            <button onClick={() => window.location.href = '/'} className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-8 py-3 rounded-lg font-medium">
               Start Shopping
             </button>
           </div>
@@ -212,138 +740,135 @@ const MyOrders = () => {
     );
   }
 
-  // Calculate stats
   const totalSpent = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
-  const deliveredCount = orders.filter(o => 
-    o.orderStatus?.toLowerCase() === "delivered" || 
-    o.status?.toLowerCase() === "delivered"
-  ).length;
+  const deliveredCount = orders.filter(o => getOrderStatus(o).toLowerCase() === "delivered").length;
 
   return (
-    <div className="min-h-screen bg-bg p-4 md:p-6 lg:p-8 fade-in">
-      <div className="container-narrow">
-        {/* Header Section */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-white p-3 md:p-5 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-text">My Orders</h1>
+            <div className="w-1 h-6 md:h-8 rounded-full bg-gradient-to-b from-blue-600 to-orange-500"></div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">My Orders</h1>
           </div>
-          <p className="text-text-muted ml-4">
+          <p className="text-gray-500 text-sm md:text-base ml-4">
             Track and manage all your orders in one place
           </p>
-          <div className="flex items-center gap-4 mt-4 ml-4">
-            <span className="badge bg-primary/10 text-primary">
+          <div className="flex flex-wrap items-center gap-3 mt-3 ml-4">
+            <span className="bg-blue-100 text-blue-700 text-xs md:text-sm px-3 py-1 rounded-full">
               {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
             </span>
-            <span className="text-sm text-text-muted flex items-center gap-1">
-              <Calendar size={14} />
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              <Calendar size={12} />
               Last updated: {formatDate(new Date())}
             </span>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="stat-card">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
-                <p className="stat-label">Total Orders</p>
-                <p className="stat-number text-2xl">{orders.length}</p>
+                <p className="text-gray-500 text-xs md:text-sm">Total Orders</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">{orders.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Package className="w-6 h-6 text-primary" />
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Package className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
           
-          <div className="stat-card">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
-                <p className="stat-label">Total Spent</p>
-                <p className="stat-number text-2xl">₹{totalSpent.toLocaleString('en-IN')}</p>
+                <p className="text-gray-500 text-xs md:text-sm">Total Spent</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">₹{totalSpent.toLocaleString('en-IN')}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-success" />
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </div>
           
-          <div className="stat-card">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
-                <p className="stat-label">Delivered</p>
-                <p className="stat-number text-2xl">{deliveredCount}</p>
+                <p className="text-gray-500 text-xs md:text-sm">Delivered</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">{deliveredCount}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {orders.map((order, index) => {
             const orderTotal = calculateOrderTotal(order);
             const itemCount = order.items?.reduce((total, item) => total + item.quantity, 0) || 0;
             const orderDate = formatCreatedAt(order);
             const orderId = order._id || index;
-            const orderNumber = order.orderNumber || `ORD${order._id?.slice(-8) || `${1000 + index}`}`;
-            const status = order.orderStatus || order.status || "Processing";
+            const orderNumber = order.orderNumber || `ORD${order._id?.slice(-6) || `${1000 + index}`}`;
+            const status = getOrderStatus(order);
+            const paymentMethod = getPaymentMethod(order);
             const currentTab = activeTab[orderId] || "items";
             
             return (
               <div
                 key={orderId}
-                className="bg-card rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition-all duration-300"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300"
               >
                 {/* Order Header */}
                 <div 
-                  className="p-5 cursor-pointer hover:bg-bg-alt/50 transition-colors"
+                  className="p-3 md:p-5 cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => toggleOrder(orderId)}
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Package className="w-5 h-5 text-primary" />
+                      <div className="flex items-center gap-2 md:gap-3 mb-1">
+                        <div className="p-1.5 rounded-lg bg-blue-100">
+                          <Package className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-text">
+                          <h3 className="font-semibold text-gray-800 text-sm md:text-base">
                             Order #{orderNumber}
                           </h3>
-                          <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
-                            <Calendar size={12} />
+                          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <Calendar size={10} />
                             {orderDate}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className={`badge border ${getStatusColor(status)} flex items-center gap-1`}>
+                        <span className={`border text-xs md:text-sm px-2 py-0.5 rounded-full flex items-center gap-1 ${getStatusColor(status)}`}>
                           {getStatusIcon(status)}
                           {status}
                         </span>
-                        <span className="badge bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-1">
+                        <span className="bg-gray-100 text-gray-700 border border-gray-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                           <CreditCard size={12} />
-                          {order.payment?.method === "COD" ? "Cash on Delivery" : (order.payment?.method || "Online")}
+                          {paymentMethod}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center justify-between sm:justify-end gap-4">
                       <div className="text-right">
-                        <p className="text-xl font-bold gradient-text">
+                        <p className="text-base md:text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
                           ₹{orderTotal.toLocaleString('en-IN')}
                         </p>
-                        <p className="text-xs text-text-muted">
+                        <p className="text-xs text-gray-500">
                           {itemCount} item{itemCount !== 1 ? 's' : ''}
                         </p>
                       </div>
-                      <div className="text-text-muted">
+                      <div className="text-gray-500">
                         {expandedOrder === orderId ? 
-                          <ChevronUp size={20} /> : 
-                          <ChevronDown size={20} />
+                          <ChevronUp size={18} /> : 
+                          <ChevronDown size={18} />
                         }
                       </div>
                     </div>
@@ -352,72 +877,70 @@ const MyOrders = () => {
 
                 {/* Order Details Expanded */}
                 {expandedOrder === orderId && (
-                  <div className="border-t border-border">
+                  <div className="border-t border-gray-200">
                     {/* Tabs */}
-                    <div className="flex border-b border-border bg-bg-alt/50">
+                    <div className="flex border-b border-gray-200 bg-gray-50">
                       <button
                         onClick={() => setOrderTab(orderId, "items")}
-                        className={`px-6 py-3 text-sm font-medium transition-colors ${
+                        className={`px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors ${
                           currentTab === "items"
-                            ? "text-primary border-b-2 border-primary"
-                            : "text-text-muted hover:text-text"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-gray-800"
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          <Package size={16} />
+                          <Package size={14} />
                           Order Items
                         </span>
                       </button>
                       <button
                         onClick={() => setOrderTab(orderId, "tracking")}
-                        className={`px-6 py-3 text-sm font-medium transition-colors ${
+                        className={`px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors ${
                           currentTab === "tracking"
-                            ? "text-primary border-b-2 border-primary"
-                            : "text-text-muted hover:text-text"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-gray-800"
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          <Navigation size={16} />
+                          <Truck size={14} />
                           Track Order
                         </span>
                       </button>
                     </div>
 
                     {/* Tab Content */}
-                    <div className="p-5">
+                    <div className="p-3 md:p-5">
                       {currentTab === "items" ? (
-                        // Order Items Content
                         <div className="space-y-6">
-                          {/* Products */}
+                          {/* Order Items */}
                           <div>
-                            <h4 className="font-semibold text-text mb-3 flex items-center gap-2">
-                              <ShoppingBag size={18} className="text-primary" />
+                            <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                              <ShoppingBag size={16} className="text-blue-600" />
                               Order Items
                             </h4>
                             <div className="space-y-3">
                               {order.items?.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border">
+                                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200">
                                   {item.image ? (
                                     <img
                                       src={item.image}
                                       alt={item.name}
-                                      className="w-16 h-16 object-cover rounded-lg border"
+                                      className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg border"
                                     />
                                   ) : (
-                                    <div className="w-16 h-16 rounded-lg border bg-bg-alt flex items-center justify-center">
-                                      <Package className="w-8 h-8 text-text-muted" />
+                                    <div className="w-12 h-12 rounded-lg border bg-gray-100 flex items-center justify-center">
+                                      <Package className="w-6 h-6 text-gray-500" />
                                     </div>
                                   )}
                                   <div className="flex-1">
-                                    <p className="font-medium text-text">{item.name}</p>
-                                    <p className="text-sm text-text-muted">Quantity: {item.quantity}</p>
-                                    <p className="text-sm text-text-muted">₹{item.price?.toLocaleString('en-IN')} each</p>
+                                    <p className="font-medium text-gray-800 text-sm md:text-base">{item.name}</p>
+                                    <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                                    <p className="text-xs text-gray-500">₹{item.price?.toLocaleString('en-IN')} each</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-semibold gradient-text">
+                                    <p className="font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent text-sm md:text-base">
                                       ₹{(item.quantity * item.price)?.toLocaleString('en-IN')}
                                     </p>
-                                    <p className="text-xs text-text-muted">Item total</p>
                                   </div>
                                 </div>
                               ))}
@@ -426,22 +949,16 @@ const MyOrders = () => {
 
                           {/* Payment Details */}
                           <div>
-                            <h4 className="font-semibold text-text mb-3 flex items-center gap-2">
-                              <CreditCard size={18} className="text-primary" />
+                            <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                              <CreditCard size={16} className="text-blue-600" />
                               Payment Details
                             </h4>
-                            <div className="p-4 rounded-lg bg-card border border-border">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-3 md:p-4 rounded-lg bg-white border border-gray-200">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-xs text-text-muted">Payment Method</p>
-                                  <p className="font-medium text-text">
-                                    {order.payment?.method === "COD" ? "Cash on Delivery" : (order.payment?.method || "N/A")}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-text-muted">Payment Status</p>
-                                  <p className={`font-medium ${order.payment?.status?.toLowerCase() === 'paid' ? 'text-success' : 'text-warning'}`}>
-                                    {order.payment?.status || "Pending"}
+                                  <p className="text-xs text-gray-500">Payment Method</p>
+                                  <p className="font-medium text-gray-800 text-sm md:text-base">
+                                    {paymentMethod}
                                   </p>
                                 </div>
                               </div>
@@ -449,78 +966,56 @@ const MyOrders = () => {
                           </div>
 
                           {/* Order Summary */}
-                          <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg p-4 border border-border">
-                            <h4 className="font-semibold text-text mb-3">Order Summary</h4>
+                          <div className="bg-gradient-to-r from-blue-50 to-orange-50 rounded-lg p-4 border border-gray-200">
+                            <h4 className="font-semibold text-gray-800 mb-3 text-sm">Order Summary</h4>
                             <div className="space-y-2">
                               {order.items?.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-sm">
-                                  <span className="text-text-muted">
+                                  <span className="text-gray-500">
                                     {item.name} × {item.quantity}
                                   </span>
-                                  <span className="text-text">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                                  <span className="text-gray-800">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                                 </div>
                               ))}
                               
-                              <div className="border-t border-border pt-2 mt-2">
+                              <div className="border-t border-gray-200 pt-3 mt-3">
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-text-muted">Subtotal</span>
-                                  <span className="text-text">₹{orderTotal.toLocaleString('en-IN')}</span>
+                                  <span className="text-gray-500">Subtotal</span>
+                                  <span className="text-gray-800">₹{orderTotal.toLocaleString('en-IN')}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-text-muted">Shipping</span>
-                                  <span className="text-success">Free</span>
+                                  <span className="text-gray-500">Shipping</span>
+                                  <span className="text-green-600">Free</span>
                                 </div>
-                                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-border">
-                                  <span className="text-text">Total Amount</span>
-                                  <span className="gradient-text font-bold">₹{orderTotal.toLocaleString('en-IN')}</span>
+                                <div className="flex justify-between font-bold text-base mt-3 pt-3 border-t border-gray-200">
+                                  <span className="text-gray-800">Total</span>
+                                  <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">₹{orderTotal.toLocaleString('en-IN')}</span>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Order Information */}
-                          <div>
-                            <h4 className="font-semibold text-text mb-3">Order Information</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-card border border-border">
-                              <div>
-                                <p className="text-xs text-text-muted">Order ID</p>
-                                <p className="text-sm font-mono text-text">{order._id || "N/A"}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-text-muted">Order Number</p>
-                                <p className="text-sm text-text">{orderNumber}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-text-muted">Placed on</p>
-                                <p className="text-sm text-text">{orderDate}</p>
-                              </div>
-                              {order.updatedAt && (
-                                <div>
-                                  <p className="text-xs text-text-muted">Last updated</p>
-                                  <p className="text-sm text-text">{formatDateTime(order.updatedAt)}</p>
-                                </div>
-                              )}
                             </div>
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+                          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
                             <button
                               onClick={() => handleDownloadInvoice(order)}
-                              className="btn btn-outline flex items-center gap-2"
+                              className="border-2 border-gray-300 text-gray-700 flex items-center gap-2 text-sm px-4 py-2 rounded-lg hover:border-blue-600 hover:text-blue-600 transition"
                             >
                               <Download size={16} />
-                              Download Invoice
+                              Invoice
                             </button>
                             <button
                               onClick={() => setOrderTab(orderId, "tracking")}
-                              className="btn btn-primary flex items-center gap-2"
+                              className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center gap-2 text-sm px-4 py-2 rounded-lg hover:shadow-lg transition"
                             >
                               <Truck size={16} />
                               Track Order
                             </button>
-                            {(status?.toLowerCase() === "delivered") && (
-                              <button className="btn btn-secondary flex items-center gap-2">
+                            {status?.toLowerCase() === "delivered" && (
+                              <button 
+                                onClick={() => window.location.href = '/'}
+                                className="border-2 border-gray-300 text-gray-700 flex items-center gap-2 text-sm px-4 py-2 rounded-lg hover:border-blue-600 hover:text-blue-600 transition"
+                              >
                                 <ShoppingBag size={16} />
                                 Buy Again
                               </button>
@@ -528,7 +1023,6 @@ const MyOrders = () => {
                           </div>
                         </div>
                       ) : (
-                        // Order Tracking Content
                         <OrderTrackingMap order={order} />
                       )}
                     </div>
@@ -540,19 +1034,19 @@ const MyOrders = () => {
         </div>
 
         {/* Help Section */}
-        <div className="mt-8 p-6 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-border">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mt-8 p-5 rounded-xl bg-gradient-to-r from-blue-50 to-orange-50 border border-gray-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Package className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-full bg-blue-100">
+                <Package className="w-5 h-5 text-blue-600" />
               </div>
-              <div>
-                <h4 className="font-semibold text-text">Need Help With Your Order?</h4>
-                <p className="text-sm text-text-muted">Contact our support team for assistance</p>
+              <div className="text-center sm:text-left">
+                <h4 className="font-semibold text-gray-800">Need Help?</h4>
+                <p className="text-sm text-gray-500">Contact our support team for assistance</p>
               </div>
             </div>
-            <button className="btn btn-outline flex items-center gap-2">
-              <ExternalLink size={16} />
+            <button className="border-2 border-gray-300 text-gray-700 flex items-center gap-2 px-4 py-2 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 transition">
+              <ExternalLink size={14} />
               Contact Support
             </button>
           </div>

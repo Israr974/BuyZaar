@@ -1,11 +1,9 @@
-
 import html2pdf from "html2pdf.js";
 
 export const generateInvoice = (order, user) => {
-  // Calculate totals
   const subtotal = order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
-  const shipping = 0; // Free shipping
-  const tax = 0; // Tax included
+  const shipping = 0;
+  const tax = 0;
   const total = subtotal + shipping + tax;
 
   const invoiceHtml = `
@@ -225,7 +223,7 @@ export const generateInvoice = (order, user) => {
         </div>
 
         <div class="footer">
-          <p>Thank you for shopping with BuyZaar!</p>
+          <p>Thank you for shopping with BuyZaar</p>
           <p>For any queries, please contact our support team at support@buyzaar.com</p>
           <p style="margin-top: 10px;">This is a computer generated invoice. No signature required.</p>
         </div>

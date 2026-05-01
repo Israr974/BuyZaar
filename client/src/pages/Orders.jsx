@@ -322,7 +322,7 @@ const Orders = () => {
           <div className="flex flex-col gap-3">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={14} />
+             
               <input
                 type="text"
                 placeholder="Search orders..."

@@ -1,6 +1,3 @@
-
-
-
 import userModel from "../models/User.js";
 import bcryptjs from "bcryptjs";
 import sendMails from "../utils/resendEmail.js";
@@ -12,7 +9,6 @@ import forgotPasswordOtp from "../utils/forgotPassword.js";
 import jwt from "jsonwebtoken";
 import cloudinary from "../config/cloudinary.js";
 import { upload } from '../middleware/multer.js';
-
 
 export const uploadProfilePicture = async (req, res) => {
   try {
@@ -36,11 +32,10 @@ export const uploadProfilePicture = async (req, res) => {
       });
     }
 
-    // Save the URL to database (same as category)
     user.profile = image;
     await user.save();
 
-    return res.json({
+    return res.status(200).json({
       message: "Profile picture uploaded successfully",
       success: true,
       error: false,
@@ -49,7 +44,6 @@ export const uploadProfilePicture = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Upload profile error:", error);
     return res.status(500).json({
       message: error.message || "Failed to upload profile picture",
       error: true,
@@ -61,7 +55,7 @@ export const uploadProfilePicture = async (req, res) => {
 export const updateProfilePicture = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { image } = req.body;  // Receive new URL from frontend
+    const { image } = req.body;
 
     if (!image) {
       return res.status(400).json({
@@ -80,11 +74,10 @@ export const updateProfilePicture = async (req, res) => {
       });
     }
 
-    // Update with new URL (same as category update)
     user.profile = image;
     await user.save();
 
-    return res.json({
+    return res.status(200).json({
       message: "Profile picture updated successfully",
       success: true,
       error: false,
@@ -93,7 +86,6 @@ export const updateProfilePicture = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Update profile error:", error);
     return res.status(500).json({
       message: error.message || "Failed to update profile picture",
       error: true,
@@ -115,11 +107,10 @@ export const deleteProfilePicture = async (req, res) => {
       });
     }
 
-    // Reset to default (same as category delete pattern)
     user.profile = "/placeholder-profile.png";
     await user.save();
 
-    return res.json({
+    return res.status(200).json({
       message: "Profile picture deleted successfully",
       success: true,
       error: false,
@@ -128,7 +119,6 @@ export const deleteProfilePicture = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Delete profile error:", error);
     return res.status(500).json({
       message: error.message || "Failed to delete profile picture",
       error: true,
@@ -136,9 +126,6 @@ export const deleteProfilePicture = async (req, res) => {
     });
   }
 };
-
-
-
 
 async function userModelRegister(req, res) {
   try {
@@ -162,14 +149,13 @@ async function userModelRegister(req, res) {
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.json({
+      return res.status(400).json({
         message: "Email already registered",
         error: true,
         success: false,
       });
     }
 
-    
     const user = await userModel.create({
       name,
       email,
@@ -190,7 +176,7 @@ async function userModelRegister(req, res) {
       html: verifyEmailTemplate({ name, url: verifyEmailUrl }),
     });
 
-    return res.json({
+    return res.status(201).json({
       message: "Registration successful. Please verify your email.",
       success: true,
       error: false,
@@ -205,7 +191,6 @@ async function userModelRegister(req, res) {
 }
 
 export default userModelRegister;
-
 
 export async function userVerifyEmail(req, res) {
   try {
@@ -223,7 +208,7 @@ export async function userVerifyEmail(req, res) {
     }
 
     if (user.verify_email) {
-      return res.json({
+      return res.status(200).json({
         message: "Email already verified",
         success: true,
         error: false,
@@ -233,7 +218,7 @@ export async function userVerifyEmail(req, res) {
     user.verify_email = true;
     await user.save();
 
-    return res.json({
+    return res.status(200).json({
       message: "Email verified successfully",
       success: true,
       error: false,
@@ -247,14 +232,10 @@ export async function userVerifyEmail(req, res) {
   }
 }
 
-
-
-
 export async function userLogin(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password required",
@@ -263,7 +244,6 @@ export async function userLogin(req, res) {
       });
     }
 
-    // Find user by email
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(400).json({
@@ -273,11 +253,6 @@ export async function userLogin(req, res) {
       });
     }
 
-    // ✅ REMOVED: Email verification check - Allow login even if not verified
-    // Users can now login without verifying email first
-    // They can verify later from their profile
-
-    // Check if account is active/banned
     if (user.status !== "active") {
       return res.status(403).json({
         message: "Account inactive or banned. Please contact support.",
@@ -286,7 +261,6 @@ export async function userLogin(req, res) {
       });
     }
 
-    // Verify password
     const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -296,29 +270,24 @@ export async function userLogin(req, res) {
       });
     }
 
-    // Generate tokens
     const accessToken = await generateAccessToken(user._id);
     const refreshToken = await generaterefreshToken(user._id);
 
-    // Update user with refresh token and login time
     user.refresh_token = refreshToken;
     user.last_login_date = new Date();
     await user.save();
 
-    // Cookie options
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     };
 
-    // Set cookies
     res.cookie("accessToken", accessToken, cookieOptions);
     res.cookie("refreshToken", refreshToken, cookieOptions);
 
-    // Prepare user data for response
     const userData = {
       id: user._id,
       _id: user._id,
@@ -327,20 +296,19 @@ export async function userLogin(req, res) {
       mobile: user.mobile || "",
       role: user.role || "user",
       status: user.status,
-      verify_email: user.verify_email || false, // Show verification status
-      isEmailVerified: user.verify_email || false, // Frontend friendly field
+      verify_email: user.verify_email || false,
+      isEmailVerified: user.verify_email || false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
 
-    // Send success response with verification warning if not verified
-    return res.json({
+    return res.status(200).json({
       message: user.verify_email 
         ? "Login successful" 
         : "Login successful! Please verify your email to access all features.",
       success: true,
       error: false,
-      requiresEmailVerification: !user.verify_email, // Let frontend know
+      requiresEmailVerification: !user.verify_email,
       data: {
         user: userData,
         accessToken,
@@ -349,7 +317,6 @@ export async function userLogin(req, res) {
     });
 
   } catch (error) {
-    console.error("Login error:", error);
     return res.status(500).json({
       message: error.message || "Internal server error",
       error: true,
@@ -357,7 +324,6 @@ export async function userLogin(req, res) {
     });
   }
 }
-
 
 export async function resendVerificationEmail(req, res) {
   try {
@@ -380,7 +346,6 @@ export async function resendVerificationEmail(req, res) {
       });
     }
 
-    // Check if already verified
     if (user.verify_email === true) {
       return res.status(400).json({
         message: "Email already verified",
@@ -389,21 +354,18 @@ export async function resendVerificationEmail(req, res) {
       });
     }
 
-    // Generate new verification token
     const emailToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.EMAIL_VERIFY_SECRET,
       { expiresIn: "24h" }
     );
 
-    // Create verification URL
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? process.env.BACKEND_URL 
       : 'http://localhost:3000';
     
     const verifyEmailUrl = `${baseUrl}/api/user/verify-email?code=${emailToken}`;
 
-    // Send verification email
     await sendMails({
       to: user.email,
       subject: "Verify Your Email - BuyZaar",
@@ -413,14 +375,13 @@ export async function resendVerificationEmail(req, res) {
       }),
     });
 
-    return res.json({
+    return res.status(200).json({
       message: "Verification email sent successfully",
       success: true,
       error: false,
     });
 
   } catch (error) {
-    console.error("Resend verification error:", error);
     return res.status(500).json({
       message: error.message || "Failed to send verification email",
       error: true,
@@ -428,6 +389,7 @@ export async function resendVerificationEmail(req, res) {
     });
   }
 }
+
 export async function userLogout(req, res) {
   try {
     const cookieOptions = {
@@ -446,14 +408,13 @@ export async function userLogout(req, res) {
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       message: "Logout successful",
       success: true,
       error: false,
     });
 
   } catch (error) {
-    console.error("Logout error:", error);
     return res.status(500).json({
       message: "Logout failed",
       success: false,
@@ -482,7 +443,7 @@ export async function updateUserDetails(req, res) {
 
     await user.save();
 
-    return res.json({
+    return res.status(200).json({
       message: "Profile updated successfully",
       success: true,
       error: false,
@@ -497,7 +458,6 @@ export async function updateUserDetails(req, res) {
       },
     });
   } catch (error) {
-    console.error("Update user error:", error);
     return res.status(500).json({ 
       message: "Server error",
       error: true,
@@ -506,14 +466,13 @@ export async function updateUserDetails(req, res) {
   }
 }
 
-
 export async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
 
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.json({
+      return res.status(404).json({
         message: "User not found",
         error: true,
         success: false,
@@ -533,67 +492,100 @@ export async function forgotPassword(req, res) {
       html: forgotPasswordOtp({ name: user.name, otp }),
     });
 
-    return res.json({
+    return res.status(200).json({
       message: "OTP sent to email",
       success: true,
       error: false,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ 
+      message: error.message || "Server error",
+      error: true,
+      success: false,
+    });
   }
 }
-
 
 export async function verifyForgetPassword(req, res) {
-  const { email, otp } = req.body;
+  try {
+    const { email, otp } = req.body;
 
-  const user = await userModel.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    const isValid = await bcryptjs.compare(otp, user.forgot_password_otp);
+    if (!isValid || Date.now() > user.forgot_password_expiry) {
+      return res.status(400).json({ 
+        message: "Invalid or expired OTP",
+        error: true,
+        success: false,
+      });
+    }
+
+    user.forgot_password_otp = null;
+    user.forgot_password_expiry = null;
+    await user.save();
+
+    return res.status(200).json({
+      message: "OTP verified",
+      success: true,
+      error: false,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Server error",
+      error: true,
+      success: false,
+    });
   }
-
-  const isValid = await bcryptjs.compare(otp, user.forgot_password_otp);
-  if (!isValid || Date.now() > user.forgot_password_expiry) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
-  }
-
-  user.forgot_password_otp = null;
-  user.forgot_password_expiry = null;
-  await user.save();
-
-  return res.json({
-    message: "OTP verified",
-    success: true,
-    error: false,
-  });
 }
-
 
 export async function resetPassword(req, res) {
-  const { email, newPassword } = req.body;
+  try {
+    const { email, newPassword } = req.body;
 
-  const user = await userModel.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    user.password = await bcryptjs.hash(newPassword, 10);
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password reset successful",
+      success: true,
+      error: false,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Server error",
+      error: true,
+      success: false,
+    });
   }
-
-  user.password = await bcryptjs.hash(newPassword, 10);
-  await user.save();
-
-  return res.json({
-    message: "Password reset successful",
-    success: true,
-    error: false,
-  });
 }
-
 
 export async function refreshTokenController(req, res) {
   try {
     const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
-      return res.status(401).json({ message: "No refresh token" });
+      return res.status(401).json({ 
+        message: "No refresh token",
+        error: true,
+        success: false,
+      });
     }
 
     const decoded = jwt.verify(
@@ -603,7 +595,11 @@ export async function refreshTokenController(req, res) {
 
     const user = await userModel.findById(decoded.id);
     if (!user || user.refresh_token !== refreshToken) {
-      return res.status(401).json({ message: "Invalid refresh token" });
+      return res.status(401).json({ 
+        message: "Invalid refresh token",
+        error: true,
+        success: false,
+      });
     }
 
     const newAccessToken = jwt.sign(
@@ -618,16 +614,19 @@ export async function refreshTokenController(req, res) {
       sameSite: "none",
     });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       error: false,
       data: { accessToken: newAccessToken },
     });
   } catch (error) {
-    return res.status(401).json({ message: "Token expired" });
+    return res.status(401).json({ 
+      message: "Token expired",
+      error: true,
+      success: false,
+    });
   }
 }
-
 
 export async function getUserDetails(req, res) {
   try {
@@ -641,7 +640,7 @@ export async function getUserDetails(req, res) {
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       error: false,
       user: {
@@ -667,3 +666,43 @@ export async function getUserDetails(req, res) {
   }
 }
 
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+    
+    if (user.profile && user.profile !== "/placeholder-profile.png") {
+      try {
+        const publicId = user.profile.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        // Silently handle Cloudinary errors
+      }
+    }
+    
+    await userModel.findByIdAndDelete(userId);
+    
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    
+    return res.status(200).json({
+      message: "Account deleted successfully",
+      success: true,
+      error: false,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Failed to delete account",
+      error: true,
+      success: false,
+    });
+  }
+};

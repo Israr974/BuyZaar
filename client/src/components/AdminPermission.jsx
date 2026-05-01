@@ -1,3 +1,123 @@
+// import React from 'react'
+// import { useSelector } from 'react-redux'
+// import { useNavigate } from 'react-router-dom'
+// import { Shield, AlertTriangle, Lock, ArrowLeft } from 'lucide-react'
+// import IsAdmin from '../utils/IsAdmin'
+
+// export const AdminPermission = ({ children, fallback, redirectTo, showMessage = true }) => {
+//   const user = useSelector(state => state.user)
+//   const navigate = useNavigate()
+//   const isAdmin = IsAdmin(user?.role)
+
+//   // Redirect if redirectTo is provided
+//   if (!isAdmin && redirectTo) {
+//     navigate(redirectTo)
+//     return null
+//   }
+
+//   // Show custom fallback if provided
+//   if (!isAdmin && fallback) {
+//     return fallback
+//   }
+
+//   // Default access denied UI
+//   if (!isAdmin) {
+//     return (
+//       <div className="min-h-[60vh] flex items-center justify-center p-4 fade-in">
+//         <div className="max-w-md w-full mx-auto">
+//           <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden text-center">
+//             {/* Header Gradient */}
+//             <div className="h-2 bg-gradient-to-r from-error via-red-500 to-error"></div>
+            
+//             <div className="p-8">
+//               {/* Icon */}
+//               <div className="relative inline-block mb-6">
+//                 <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center">
+//                   <Shield className="w-14 h-14 text-error" />
+//                 </div>
+//                 <div className="absolute -top-2 -right-2 animate-bounce">
+//                   <AlertTriangle className="w-6 h-6 text-warning" />
+//                 </div>
+//               </div>
+
+//               {/* Title */}
+//               <h1 className="text-2xl font-display font-bold text-text mb-3">
+//                 Access Denied
+//               </h1>
+              
+//               <p className="text-text-muted mb-6">
+//                 You don't have permission to access this page. This area requires administrator privileges.
+//               </p>
+
+//               {/* User Role Info */}
+//               <div className="bg-bg-alt rounded-xl p-4 mb-6">
+//                 <p className="text-sm text-text-muted">Your current role:</p>
+//                 <p className="text-lg font-semibold text-text capitalize">
+//                   {user?.role || 'Guest'}
+//                 </p>
+//               </div>
+
+//               {/* Action Buttons */}
+//               <div className="space-y-3">
+//                 <button
+//                   onClick={() => navigate(-1)}
+//                   className="w-full btn btn-primary py-3 rounded-xl flex items-center justify-center gap-2"
+//                 >
+//                   <ArrowLeft size={18} />
+//                   Go Back
+//                 </button>
+                
+//                 <button
+//                   onClick={() => navigate('/')}
+//                   className="w-full btn btn-outline py-3 rounded-xl flex items-center justify-center gap-2"
+//                 >
+//                   Go to Homepage
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Help Section */}
+//           <div className="mt-6 text-center">
+//             <p className="text-sm text-text-muted flex items-center justify-center gap-2">
+//               <Lock size={14} />
+//               Need access? Contact your system administrator
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   return children
+// }
+
+// // Alternative: Component that hides children instead of showing message
+// export const AdminOnly = ({ children, fallback = null }) => {
+//   const user = useSelector(state => state.user)
+//   const isAdmin = IsAdmin(user?.role)
+  
+//   return isAdmin ? children : fallback
+// }
+
+// // Alternative: Component that shows content for non-admin users
+// export const NonAdminOnly = ({ children, fallback = null }) => {
+//   const user = useSelector(state => state.user)
+//   const isAdmin = IsAdmin(user?.role)
+  
+//   return !isAdmin ? children : fallback
+// }
+
+// // Hook version for programmatic use
+// export const useAdminPermission = () => {
+//   const user = useSelector(state => state.user)
+//   return IsAdmin(user?.role)
+// }
+
+// export default AdminPermission
+
+
+
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -9,59 +129,51 @@ export const AdminPermission = ({ children, fallback, redirectTo, showMessage = 
   const navigate = useNavigate()
   const isAdmin = IsAdmin(user?.role)
 
-  // Redirect if redirectTo is provided
   if (!isAdmin && redirectTo) {
     navigate(redirectTo)
     return null
   }
 
-  // Show custom fallback if provided
   if (!isAdmin && fallback) {
     return fallback
   }
 
-  // Default access denied UI
   if (!isAdmin) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center p-4 fade-in">
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
         <div className="max-w-md w-full mx-auto">
-          <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden text-center">
-            {/* Header Gradient */}
-            <div className="h-2 bg-gradient-to-r from-error via-red-500 to-error"></div>
+          <div className="bg-white rounded-2xl shadow-xl border overflow-hidden text-center">
+            <div className="h-2 bg-gradient-to-r from-red-500 via-red-500 to-red-500"></div>
             
             <div className="p-8">
-              {/* Icon */}
               <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center">
-                  <Shield className="w-14 h-14 text-error" />
+                <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+                  <Shield className="w-14 h-14 text-red-600" />
                 </div>
                 <div className="absolute -top-2 -right-2 animate-bounce">
-                  <AlertTriangle className="w-6 h-6 text-warning" />
+                  <AlertTriangle className="w-6 h-6 text-yellow-500" />
                 </div>
               </div>
 
-              {/* Title */}
-              <h1 className="text-2xl font-display font-bold text-text mb-3">
+              <h1 className="text-2xl font-bold text-gray-800 mb-3">
                 Access Denied
               </h1>
               
-              <p className="text-text-muted mb-6">
+              <p className="text-gray-500 mb-6">
                 You don't have permission to access this page. This area requires administrator privileges.
               </p>
 
-              {/* User Role Info */}
-              <div className="bg-bg-alt rounded-xl p-4 mb-6">
-                <p className="text-sm text-text-muted">Your current role:</p>
-                <p className="text-lg font-semibold text-text capitalize">
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <p className="text-sm text-gray-500">Your current role:</p>
+                <p className="text-lg font-semibold text-gray-800 capitalize">
                   {user?.role || 'Guest'}
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="space-y-3">
                 <button
                   onClick={() => navigate(-1)}
-                  className="w-full btn btn-primary py-3 rounded-xl flex items-center justify-center gap-2"
+                  className="w-full bg-blue-600 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition"
                 >
                   <ArrowLeft size={18} />
                   Go Back
@@ -69,7 +181,7 @@ export const AdminPermission = ({ children, fallback, redirectTo, showMessage = 
                 
                 <button
                   onClick={() => navigate('/')}
-                  className="w-full btn btn-outline py-3 rounded-xl flex items-center justify-center gap-2"
+                  className="w-full border border-gray-300 text-gray-700 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition"
                 >
                   Go to Homepage
                 </button>
@@ -77,9 +189,8 @@ export const AdminPermission = ({ children, fallback, redirectTo, showMessage = 
             </div>
           </div>
 
-          {/* Help Section */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-text-muted flex items-center justify-center gap-2">
+            <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
               <Lock size={14} />
               Need access? Contact your system administrator
             </p>
@@ -92,23 +203,18 @@ export const AdminPermission = ({ children, fallback, redirectTo, showMessage = 
   return children
 }
 
-// Alternative: Component that hides children instead of showing message
 export const AdminOnly = ({ children, fallback = null }) => {
   const user = useSelector(state => state.user)
   const isAdmin = IsAdmin(user?.role)
-  
   return isAdmin ? children : fallback
 }
 
-// Alternative: Component that shows content for non-admin users
 export const NonAdminOnly = ({ children, fallback = null }) => {
   const user = useSelector(state => state.user)
   const isAdmin = IsAdmin(user?.role)
-  
   return !isAdmin ? children : fallback
 }
 
-// Hook version for programmatic use
 export const useAdminPermission = () => {
   const user = useSelector(state => state.user)
   return IsAdmin(user?.role)

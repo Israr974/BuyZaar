@@ -1,8 +1,3 @@
-
-
-
-
-
 import multer from "multer";
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
@@ -31,7 +26,6 @@ export const AddProduct = async (req, res) => {
       dimensions
     } = req.body;
 
-    
     if (!name?.trim()) {
       return res.status(400).json({
         success: false,
@@ -122,9 +116,6 @@ export const AddProduct = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("AddProduct Error:", error);
-
-    
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -140,7 +131,6 @@ export const AddProduct = async (req, res) => {
     });
   }
 };
-
 
 export const getProduct = async (req, res) => {
   try {
@@ -163,7 +153,6 @@ export const getProduct = async (req, res) => {
       Product.countDocuments(query),
     ]);
 
-    // Get review counts for each product
     const productIds = data.map(p => p._id);
     const reviewCounts = await Review.aggregate([
       { $match: { product: { $in: productIds }, status: "approved" } },
@@ -181,7 +170,7 @@ export const getProduct = async (req, res) => {
       rating: reviewMap[product._id]?.avgRating ? parseFloat(reviewMap[product._id].avgRating.toFixed(1)) : 0,
     }));
 
-    return res.json({
+    return res.status(200).json({
       message: "Product Details",
       success: true,
       error: false,
@@ -194,7 +183,7 @@ export const getProduct = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Failed to fetch products",
     });
   }
 };
@@ -215,7 +204,7 @@ export const getProductByCategoryId = async (req, res) => {
       category: { $in: [id] },
     }).limit(15);
 
-    return res.json({
+    return res.status(200).json({
       message: "Product list",
       success: true,
       error: false,
@@ -226,7 +215,7 @@ export const getProductByCategoryId = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Failed to fetch products",
     });
   }
 };
@@ -246,16 +235,13 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     page = Number(page) || 1;
     limit = Number(limit) || 10;
 
-    // Build query with category only first
     let query = {
       category: { $in: Array.isArray(categoryId) ? categoryId : [categoryId] },
     };
     
-    // ONLY add sub_category filter if subCategoryId is NOT "all"
     if (subCategoryId && subCategoryId !== 'all') {
       query.sub_category = { $in: Array.isArray(subCategoryId) ? subCategoryId : [subCategoryId] };
     }
-    // If subCategoryId is "all", we don't add sub_category filter at all
 
     const skip = (page - 1) * limit;
 
@@ -269,7 +255,7 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
       Product.countDocuments(query),
     ]);
 
-    return res.json({
+    return res.status(200).json({
       message: "Product List",
       success: true,
       error: false,
@@ -281,7 +267,6 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error:", error);
     return res.status(500).json({
       success: false,
       error: true,
@@ -289,8 +274,6 @@ export const getProductByCategoryAndSubCategory = async (req, res) => {
     });
   }
 };
-
-
 
 export const getProductById = async (req, res) => {
   try {
@@ -316,12 +299,10 @@ export const getProductById = async (req, res) => {
       });
     }
 
-    // Fetch reviews for this product
     const reviews = await Review.find({ product: productId, status: "approved" })
       .populate("user", "name")
       .sort({ createdAt: -1 });
 
-    // Calculate rating if not already stored
     if (reviews.length > 0 && !product.rating) {
       const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
       product.rating = parseFloat(avgRating.toFixed(1));
@@ -329,7 +310,7 @@ export const getProductById = async (req, res) => {
       await product.save();
     }
 
-    return res.json({
+    return res.status(200).json({
       message: "Product Details",
       success: true,
       error: false,
@@ -343,7 +324,7 @@ export const getProductById = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Failed to fetch product",
     });
   }
 };
@@ -368,7 +349,7 @@ export const updateProductDetail = async (req, res) => {
       });
     }
 
-    const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
+    const product = await Product.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
     if (!product) {
       return res.status(404).json({
@@ -378,7 +359,7 @@ export const updateProductDetail = async (req, res) => {
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       error: false,
       data: product,
@@ -388,11 +369,10 @@ export const updateProductDetail = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: "Server Error",
+      message: error.message || "Server Error",
     });
   }
 };
-
 
 export const deletProduct = async (req, res) => {
   try {
@@ -416,9 +396,10 @@ export const deletProduct = async (req, res) => {
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       error: false,
+      message: "Product deleted successfully",
       data: product,
     });
 
@@ -426,11 +407,10 @@ export const deletProduct = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: "Server Error",
+      message: error.message || "Server Error",
     });
   }
 };
-
 
 export const searchProduct = async (req, res) => {
   try {
@@ -452,7 +432,7 @@ export const searchProduct = async (req, res) => {
       Product.countDocuments(query),
     ]);
 
-    return res.json({
+    return res.status(200).json({
       message: "Product Details",
       success: true,
       error: false,
@@ -465,7 +445,7 @@ export const searchProduct = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Failed to search products",
     });
   }
 };

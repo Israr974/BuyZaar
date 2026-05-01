@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Footer from "./components/Footer";
@@ -23,7 +21,6 @@ const App = () => {
           await fetchUserDetails();
         } catch (error) {
           console.warn("User session expired or invalid");
-          // Clear invalid tokens
           localStorage.removeItem("token");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
@@ -36,7 +33,6 @@ const App = () => {
     initializeApp();
   }, []);
 
-  // Check if current route is admin dashboard (to hide footer maybe)
   const isAdminRoute = location.pathname.startsWith("/dashboard") && 
     (location.pathname.includes("/category") || 
      location.pathname.includes("/subcategory") ||
@@ -59,7 +55,6 @@ const App = () => {
         
         {!isAdminRoute && <Footer />}
         
-        {/* Toast Notifications */}
         <Toaster 
           position="top-center"
           reverseOrder={false}
@@ -102,7 +97,6 @@ const App = () => {
           }}
         />
         
-        {/* Scroll to top on route change */}
         <ScrollToTop />
       </GlobalProvider>
     </div>

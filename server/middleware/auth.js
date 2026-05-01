@@ -6,7 +6,6 @@ const auth = async (req, res, next) => {
     const token = req.cookies?.accessToken || (authHeader && authHeader.split(" ")[1]);
 
     if (!token) {
-      console.log("Token missing", { headers: req.headers, cookies: req.cookies });
       return res.status(401).json({
         success: false,
         error: true,
@@ -27,14 +26,12 @@ const auth = async (req, res, next) => {
     req.user = { id: decoded.id };
     next();
   } catch (error) {
-    console.log("Auth error:", error);
     return res.status(401).json({
       success: false,
       error: true,
-      message:
-        error.name === "TokenExpiredError"
-          ? "Session expired. Please login again."
-          : "Authentication failed"
+      message: error.name === "TokenExpiredError"
+        ? "Session expired. Please login again."
+        : "Authentication failed"
     });
   }
 };

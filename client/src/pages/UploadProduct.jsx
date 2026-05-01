@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Axios from "../utils/Axios";
 import AxiosError from "../utils/AxiosToError";
 import summaryApi from "../common/summartApi";
@@ -32,6 +32,10 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
   const [isFetching, setIsFetching] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
+
+  const abortControllerRef = useRef(null);
+  const isMounted = useRef(true);
 
   const [data, setData] = useState({
     name: "",
@@ -51,7 +55,17 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     dimensions: "",
   });
 
-  const resetForm = () => {
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const resetForm = useCallback(() => {
     setData({
       name: "",
       image: [],
@@ -72,58 +86,99 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     setSelectedSubCategory("");
     setErrors({});
     setUploadProgress(0);
-  };
+  }, []);
 
+  // Fetch categories - Fixed version
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsFetching(true);
-        const res = await Axios(summaryApi().getAllCategory);
-        setCategories(res.data?.data || []);
+        
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("Please login to add products");
+          return;
+        }
+
+        const res = await Axios({
+          ...summaryApi().getAllCategory,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (isMounted.current && res.data?.success) {
+          setCategories(res.data.data || []);
+          setDataFetched(true);
+        } else {
+          toast.error(res.data?.message || "Failed to load categories");
+        }
       } catch (error) {
-        AxiosError(error);
-        toast.error("Failed to load categories");
+        if (isMounted.current) {
+          console.error("Fetch categories error:", error);
+          toast.error(error.response?.data?.message || "Failed to load categories");
+        }
       } finally {
-        setIsFetching(false);
+        if (isMounted.current) {
+          setIsFetching(false);
+        }
       }
     };
+    
     fetchCategories();
   }, []);
 
+  // Fetch subcategories - Fixed version
   useEffect(() => {
     const fetchSubCategories = async () => {
       try {
-        const res = await Axios(summaryApi().getSubcategory);
-        setAllSubCategories(res.data?.data || []);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await Axios({
+          ...summaryApi().getSubcategory,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (isMounted.current && res.data?.success) {
+          setAllSubCategories(res.data.data || []);
+        }
       } catch (error) {
-        AxiosError(error);
+        if (isMounted.current) {
+          console.error("Fetch subcategories error:", error);
+        }
       }
     };
+    
     fetchSubCategories();
   }, []);
 
+  // Filter subcategories based on selected category
   useEffect(() => {
     if (!data.category) {
       setAvailableSubCategories([]);
       return;
     }
     const filtered = allSubCategories.filter((sub) =>
-      sub.category.some((c) => c._id === data.category)
+      sub.category?.some((c) => c?._id === data.category)
     );
     setAvailableSubCategories(filtered);
     setSelectedSubCategory("");
   }, [data.category, allSubCategories]);
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
-  };
+  }, [errors]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const files = Array.from(e.target.files);
+    
     const validFiles = files.filter(file => {
       if (!file.type.startsWith("image/")) {
         toast.error(`File ${file.name} is not an image`);
@@ -146,16 +201,16 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       image: [...prev.image, ...validFiles]
     }));
     setErrors(prev => ({ ...prev, image: null }));
-  };
+  }, [data.image.length]);
 
-  const removeImage = (index) => {
+  const removeImage = useCallback((indexToRemove) => {
     setData(prev => ({
       ...prev,
-      image: prev.image.filter((_, i) => i !== index),
+      image: prev.image.filter((_, index) => index !== indexToRemove),
     }));
-  };
+  }, []);
 
-  const addSubCategory = () => {
+  const addSubCategory = useCallback(() => {
     if (!selectedSubCategory) {
       toast.error("Please select a subcategory");
       return;
@@ -174,19 +229,20 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     }));
     setSelectedSubCategory("");
     setErrors(prev => ({ ...prev, subCategory: null }));
-  };
+  }, [selectedSubCategory, data.subCategory]);
 
-  const removeSubCategory = (subCatId) => {
+  const removeSubCategory = useCallback((subCatId) => {
     setData(prev => ({
       ...prev,
       subCategory: prev.subCategory.filter((id) => id !== subCatId),
     }));
-  };
+  }, []);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {};
     
-    if (!data.name.trim()) newErrors.name = "Product name is required";
+    if (!data.name?.trim()) newErrors.name = "Product name is required";
+    if (data.name?.trim().length < 2) newErrors.name = "Name must be at least 2 characters";
     
     const price = parseFloat(data.price);
     if (!data.price || isNaN(price) || price <= 0) {
@@ -206,8 +262,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     if (!data.category) newErrors.category = "Select a category";
     if (data.subCategory.length === 0) newErrors.subCategory = "Add at least one subcategory";
     if (data.image.length === 0) newErrors.image = "Upload at least one image";
-    if (!data.unit.trim()) newErrors.unit = "Unit is required";
-    if (!data.description.trim()) newErrors.description = "Description is required";
+    if (!data.unit?.trim()) newErrors.unit = "Unit is required";
+    if (!data.description?.trim()) newErrors.description = "Description is required";
     
     setErrors(newErrors);
     
@@ -218,14 +274,21 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       return false;
     }
     return true;
-  };
+  }, [data]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
 
+    setLoading(true);
+    setUploadProgress(0);
+
     try {
-      setLoading(true);
-      setUploadProgress(0);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to upload products");
+        setLoading(false);
+        return;
+      }
 
       const uploadedUrls = [];
       const totalImages = data.image.length;
@@ -245,13 +308,19 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
         const res = await Axios({
           ...summaryApi().uploadImage,
           data: formData,
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { 
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
         });
+
+        if (!isMounted.current) return;
 
         if (res.data?.imageUrl) {
           uploadedUrls.push(res.data.imageUrl);
         } else {
           toast.error(`Failed to upload image: ${file.name}`);
+          setLoading(false);
           return;
         }
         
@@ -259,39 +328,56 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       }
 
       const payload = {
-        ...data,
+        name: data.name.trim(),
+        unit: data.unit.trim(),
+        stock: parseInt(data.stock),
+        price: parseFloat(data.price),
+        discount: data.discount ? parseFloat(data.discount) : 0,
+        description: data.description.trim(),
+        more_details: data.more_details?.trim() || "",
+        publish: data.publish,
+        category: data.category,
         sub_category: data.subCategory,
         image: uploadedUrls,
-        price: parseFloat(data.price) || 0,
-        stock: parseInt(data.stock) || 0,
-        discount: parseFloat(data.discount) || 0,
+        ...(data.sku && { sku: data.sku.trim() }),
+        ...(data.brand && { brand: data.brand.trim() }),
+        ...(data.weight && { weight: data.weight.trim() }),
+        ...(data.dimensions && { dimensions: data.dimensions.trim() }),
       };
 
       const productRes = await Axios({
         ...summaryApi().addProduct,
         data: payload,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      if (productRes.data.success) {
+      if (!isMounted.current) return;
+
+      if (productRes.data?.success) {
         toast.success("Product uploaded successfully!");
         resetForm();
         fetchProducts?.();
         onSuccess?.();
         onClose?.();
       } else {
-        toast.error(productRes.data.message || "Failed to upload product");
+        toast.error(productRes.data?.message || "Failed to upload product");
       }
     } catch (error) {
+      if (!isMounted.current) return;
+      
       console.error("Upload error:", error);
-      AxiosError(error);
       toast.error(error.response?.data?.message || "Failed to upload product");
     } finally {
-      setLoading(false);
-      setUploadProgress(0);
+      if (isMounted.current) {
+        setLoading(false);
+        setUploadProgress(0);
+      }
     }
-  };
+  }, [data, validateForm, resetForm, fetchProducts, onSuccess, onClose]);
 
-  const handleImageDrop = (e) => {
+  const handleImageDrop = useCallback((e) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
     const validFiles = files.filter(file => file.type.startsWith("image/"));
@@ -300,22 +386,22 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     } else {
       toast.error("Please drop image files only");
     }
-  };
+  }, [handleFileChange]);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
-  };
+  }, []);
 
-  const getSubCategoryName = (id) => {
+  const getSubCategoryName = useCallback((id) => {
     const sub = allSubCategories.find(s => s._id === id);
     return sub?.name || id;
-  };
+  }, [allSubCategories]);
 
-  if (isFetching && categories.length === 0) {
+  if (isFetching && categories.length === 0 && dataFetched === false) {
     return (
       <div className="w-full max-w-6xl p-8 flex justify-center items-center">
         <div className="text-center">
-          <div className="spinner w-12 h-12 mb-4"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-text-muted">Loading categories...</p>
         </div>
       </div>
@@ -325,7 +411,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
   return (
     <div className="w-full max-w-6xl p-6 md:p-8 overflow-y-auto max-h-[90vh] custom-scrollbar">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border bg-card z-10">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
         <div>
           <h2 className="text-2xl md:text-3xl font-display font-bold gradient-text">
             Add New Product
@@ -338,6 +424,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
           disabled={loading}
+          aria-label="Close"
         >
           <X size={24} />
         </button>
@@ -346,9 +433,9 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl p-6 text-center">
-            <div className="spinner w-12 h-12 mb-4"></div>
-            <p className="text-text">Uploading product...</p>
+          <div className="bg-card rounded-xl p-6 text-center border border-border">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text font-medium">Uploading product...</p>
             <p className="text-text-muted text-sm mt-2">{Math.round(uploadProgress)}%</p>
           </div>
         </div>
@@ -357,192 +444,179 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
-
           {/* Basic Information */}
-<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
-  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-    <Tag className="text-primary" size={20} />
-    <h3 className="text-lg font-semibold text-text">Basic Information</h3>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {/* Product Name */}
-    <div>
-      <label className="label flex items-center gap-1">
-        Product Name <span className="text-error">*</span>
-      </label>
-      <div className="relative">
-        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-        <input
-          type="text"
-          name="name"
-          placeholder="Enter product name"
-          value={data.name}
-          onChange={handleChange}
-          className={`input w-full ${errors.name ? 'border-error' : ''}`}
-          style={{ paddingLeft: '2.5rem' }}
-        />
-      </div>
-      {errors.name && (
-        <p id="error-name" className="mt-1 text-xs text-error flex items-center gap-1">
-          <AlertCircle size={12} />
-          {errors.name}
-        </p>
-      )}
-    </div>
-    
-    {/* SKU */}
-    <div>
-      <label className="label">SKU (Optional)</label>
-      <div className="relative">
-        <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-        <input
-          type="text"
-          name="sku"
-          placeholder="Enter SKU"
-          value={data.sku}
-          onChange={handleChange}
-          className="input w-full"
-          style={{ paddingLeft: '2.5rem' }}
-        />
-      </div>
-    </div>
-    
-    {/* Brand */}
-    <div>
-      <label className="label">Brand (Optional)</label>
-      <input
-        type="text"
-        name="brand"
-        placeholder="Enter brand name"
-        value={data.brand}
-        onChange={handleChange}
-        className="input w-full"
-      />
-    </div>
-    
-    {/* Unit */}
-    <div>
-      <label className="label flex items-center gap-1">
-        Unit <span className="text-error">*</span>
-      </label>
-      <div className="relative">
-        <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-        <input
-          type="text"
-          name="unit"
-          placeholder="e.g., kg, piece, liter"
-          value={data.unit}
-          onChange={handleChange}
-          className={`input w-full ${errors.unit ? 'border-error' : ''}`}
-          style={{ paddingLeft: '2.5rem' }}
-        />
-      </div>
-      {errors.unit && (
-        <p className="mt-1 text-xs text-error flex items-center gap-1">
-          <AlertCircle size={12} />
-          {errors.unit}
-        </p>
-      )}
-    </div>
-  </div>
-</div>
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+              <Tag className="text-primary" size={20} aria-hidden="true" />
+              <h3 className="text-lg font-semibold text-text">Basic Information</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Product Name */}
+              <div className="md:col-span-2">
+                <label className="label flex items-center gap-1">
+                  Product Name <span className="text-error">*</span>
+                </label>
+                <div className="relative">
+                  <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter product name"
+                    value={data.name}
+                    onChange={handleChange}
+                    className={`input w-full pl-10 ${errors.name ? 'border-error' : ''}`}
+                    aria-invalid={!!errors.name}
+                  />
+                </div>
+                {errors.name && (
+                  <p id="error-name" className="mt-1 text-xs text-error flex items-center gap-1">
+                    <AlertCircle size={12} aria-hidden="true" />
+                    {errors.name}
+                  </p>
+                )}
+              </div>
+              
+              {/* SKU */}
+              <div>
+                <label className="label">SKU (Optional)</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="sku"
+                    placeholder="Enter SKU"
+                    value={data.sku}
+                    onChange={handleChange}
+                    className="input w-full pl-10"
+                  />
+                </div>
+              </div>
+              
+              {/* Brand */}
+              <div>
+                <label className="label">Brand (Optional)</label>
+                <input
+                  type="text"
+                  name="brand"
+                  placeholder="Enter brand name"
+                  value={data.brand}
+                  onChange={handleChange}
+                  className="input w-full"
+                />
+              </div>
+              
+              {/* Unit */}
+              <div className="md:col-span-2">
+                <label className="label flex items-center gap-1">
+                  Unit <span className="text-error">*</span>
+                </label>
+                <div className="relative">
+                  <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="unit"
+                    placeholder="e.g., kg, piece, liter"
+                    value={data.unit}
+                    onChange={handleChange}
+                    className={`input w-full pl-10 ${errors.unit ? 'border-error' : ''}`}
+                  />
+                </div>
+                {errors.unit && (
+                  <p className="mt-1 text-xs text-error flex items-center gap-1">
+                    <AlertCircle size={12} aria-hidden="true" />
+                    {errors.unit}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
 
-
-{/* Pricing & Inventory */}
-<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
-  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-    <DollarSign className="text-primary" size={20} />
-    <h3 className="text-lg font-semibold text-text">Pricing & Inventory</h3>
-  </div>
-  
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    {/* Price */}
-    <div>
-      <label className="label flex items-center gap-1">
-        Price <span className="text-error">*</span>
-      </label>
-      <div className="relative">
-        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
-        <input
-          type="text"
-          name="price"
-          placeholder="Enter price"
-          value={data.price}
-          onChange={handleChange}
-          className={`input w-full pl-8 ${errors.price ? 'border-error' : ''}`}
-          style={{ paddingLeft: '2rem' }}
-        />
-      </div>
-      {errors.price && (
-        <p className="mt-1 text-xs text-error">{errors.price}</p>
-      )}
-    </div>
-    
-    {/* Discount */}
-    <div>
-      <label className="label">Discount (%)</label>
-      <div className="relative">
-        <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
-        <input
-          type="text"
-          name="discount"
-          placeholder="Enter discount"
-          value={data.discount}
-          onChange={handleChange}
-          className={`input w-full pl-8 ${errors.discount ? 'border-error' : ''}`}
-          style={{ paddingLeft: '2rem' }}
-        />
-      </div>
-      {errors.discount && (
-        <p className="mt-1 text-xs text-error">{errors.discount}</p>
-      )}
-    </div>
-    
-    {/* Stock */}
-    <div>
-      <label className="label flex items-center gap-1">
-        Stock <span className="text-error">*</span>
-      </label>
-      <div className="relative">
-        <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted z-10" size={18} />
-        <input
-          type="text"
-          name="stock"
-          placeholder="Enter stock quantity"
-          value={data.stock}
-          onChange={handleChange}
-          className={`input w-full pl-8 ${errors.stock ? 'border-error' : ''}`}
-          style={{ paddingLeft: '2rem' }}
-        />
-      </div>
-      {errors.stock && (
-        <p className="mt-1 text-xs text-error">{errors.stock}</p>
-      )}
-    </div>
-    
-    {/* Status */}
-    <div>
-      <label className="label">Status</label>
-      <select
-        name="publish"
-        value={data.publish}
-        onChange={(e) =>
-          setData((prev) => ({ ...prev, publish: e.target.value === "true" }))
-        }
-        className="input w-full"
-      >
-        <option value="true">Published</option>
-        <option value="false">Draft</option>
-      </select>
-    </div>
-  </div>
-</div>
+          {/* Pricing & Inventory */}
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+              <DollarSign className="text-primary" size={20} aria-hidden="true" />
+              <h3 className="text-lg font-semibold text-text">Pricing & Inventory</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Price */}
+              <div>
+                <label className="label flex items-center gap-1">
+                  Price (₹) <span className="text-error">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  placeholder="0.00"
+                  value={data.price}
+                  onChange={handleChange}
+                  className={`input w-full ${errors.price ? 'border-error' : ''}`}
+                  min="0"
+                  step="0.01"
+                />
+                {errors.price && (
+                  <p className="mt-1 text-xs text-error">{errors.price}</p>
+                )}
+              </div>
+              
+              {/* Discount */}
+              <div>
+                <label className="label">Discount (%)</label>
+                <input
+                  type="number"
+                  name="discount"
+                  placeholder="0"
+                  value={data.discount}
+                  onChange={handleChange}
+                  className={`input w-full ${errors.discount ? 'border-error' : ''}`}
+                  min="0"
+                  max="100"
+                />
+                {errors.discount && (
+                  <p className="mt-1 text-xs text-error">{errors.discount}</p>
+                )}
+              </div>
+              
+              {/* Stock */}
+              <div>
+                <label className="label flex items-center gap-1">
+                  Stock <span className="text-error">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="stock"
+                  placeholder="0"
+                  value={data.stock}
+                  onChange={handleChange}
+                  className={`input w-full ${errors.stock ? 'border-error' : ''}`}
+                  min="0"
+                />
+                {errors.stock && (
+                  <p className="mt-1 text-xs text-error">{errors.stock}</p>
+                )}
+              </div>
+              
+              {/* Status */}
+              <div>
+                <label className="label">Status</label>
+                <select
+                  name="publish"
+                  value={data.publish}
+                  onChange={(e) => setData((prev) => ({ ...prev, publish: e.target.value === "true" }))}
+                  className="input w-full"
+                >
+                  <option value="true">✓ Published (Visible)</option>
+                  <option value="false">✗ Draft (Hidden)</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           {/* Categories */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-              <Layers className="text-primary" size={20} />
+              <Layers className="text-primary" size={20} aria-hidden="true" />
               <h3 className="text-lg font-semibold text-text">Categories</h3>
             </div>
             
@@ -597,6 +671,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                       onClick={addSubCategory}
                       className="btn-primary px-4 py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!selectedSubCategory}
+                      aria-label="Add subcategory"
                     >
                       <Plus size={18} />
                     </button>
@@ -608,12 +683,13 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                         key={subCatId}
                         className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-sm border border-primary/20"
                       >
-                        <Grid3x3 size={12} />
+                        <Grid3x3 size={12} aria-hidden="true" />
                         <span>{getSubCategoryName(subCatId)}</span>
                         <button
                           type="button"
                           onClick={() => removeSubCategory(subCatId)}
                           className="hover:text-error transition-colors"
+                          aria-label="Remove subcategory"
                         >
                           <X size={12} />
                         </button>
@@ -634,7 +710,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           {/* Descriptions */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-              <CheckCircle className="text-primary" size={20} />
+              <CheckCircle className="text-primary" size={20} aria-hidden="true" />
               <h3 className="text-lg font-semibold text-text">Descriptions</h3>
             </div>
             
@@ -650,6 +726,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                   onChange={handleChange}
                   className={`input min-h-[100px] ${errors.description ? 'border-error' : ''}`}
                   rows="3"
+                  maxLength="500"
                 />
                 <div className="flex justify-between mt-1">
                   {errors.description && (
@@ -681,7 +758,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           {/* Product Images */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-              <ImageIcon className="text-primary" size={20} />
+              <ImageIcon className="text-primary" size={20} aria-hidden="true" />
               <h3 className="text-lg font-semibold text-text">Product Images</h3>
               {errors.image && <span className="text-error text-xs ml-auto">* Required</span>}
             </div>
@@ -693,7 +770,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 errors.image ? 'border-error bg-error/5' : 'border-border hover:border-primary hover:bg-primary/5'
               }`}
             >
-              <Upload className="mx-auto text-text-muted mb-3" size={32} />
+              <Upload className="mx-auto text-text-muted mb-3" size={32} aria-hidden="true" />
               <p className="text-text font-medium mb-2">Drop images here or click to upload</p>
               <p className="text-text-muted text-sm mb-4">Supports JPG, PNG up to 5MB each</p>
               
@@ -718,21 +795,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
               </p>
             </div>
 
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="mt-4">
-                <div className="flex justify-between text-sm text-text-muted mb-1">
-                  <span>Uploading images...</span>
-                  <span>{Math.round(uploadProgress)}%</span>
-                </div>
-                <div className="h-2 bg-bg-alt rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 rounded-full"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
             {data.image.length > 0 && (
               <div className="mt-5">
                 <div className="flex items-center justify-between mb-2">
@@ -741,12 +803,12 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {data.image.map((file, index) => {
-                    const src = typeof file === "string" ? file : URL.createObjectURL(file);
+                    const previewUrl = typeof file === "string" ? file : URL.createObjectURL(file);
                     return (
                       <div key={index} className="relative group">
                         <img
-                          src={src}
-                          alt="preview"
+                          src={previewUrl}
+                          alt={`Product preview ${index + 1}`}
                           className="h-20 w-full object-cover rounded-lg border border-border"
                         />
                         {index === 0 && (
@@ -757,7 +819,8 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          className="absolute top-1 right-1 p-1 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error/80"
+                          aria-label="Remove image"
                         >
                           <Trash2 size={10} />
                         </button>
@@ -767,47 +830,55 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 </div>
               </div>
             )}
+            
+            {errors.image && (
+              <p className="mt-2 text-xs text-error flex items-center gap-1">
+                <AlertCircle size={12} aria-hidden="true" />
+                {errors.image}
+              </p>
+            )}
           </div>
 
-         {/* Specifications */}
-<div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
-  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
-    <Info className="text-primary" size={20} />
-    <h3 className="text-lg font-semibold text-text">Specifications</h3>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label className="label flex items-center gap-1">
-        <Weight size={14} />
-        Weight
-      </label>
-      <input
-        type="text"
-        name="weight"
-        placeholder="e.g., 1.5 kg"
-        value={data.weight}
-        onChange={handleChange}
-        className="input w-full"
-      />
-    </div>
-    
-    <div>
-      <label className="label flex items-center gap-1">
-        <Ruler size={14} />
-        Dimensions
-      </label>
-      <input
-        type="text"
-        name="dimensions"
-        placeholder="e.g., 10x5x3 inches"
-        value={data.dimensions}
-        onChange={handleChange}
-        className="input w-full"
-      />
-    </div>
-  </div>
-</div>
+          {/* Specifications */}
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+              <Info className="text-primary" size={20} aria-hidden="true" />
+              <h3 className="text-lg font-semibold text-text">Specifications</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label flex items-center gap-1">
+                  <Weight size={14} aria-hidden="true" />
+                  Weight
+                </label>
+                <input
+                  type="text"
+                  name="weight"
+                  placeholder="e.g., 1.5 kg"
+                  value={data.weight}
+                  onChange={handleChange}
+                  className="input w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="label flex items-center gap-1">
+                  <Ruler size={14} aria-hidden="true" />
+                  Dimensions
+                </label>
+                <input
+                  type="text"
+                  name="dimensions"
+                  placeholder="e.g., 10x5x3 inches"
+                  value={data.dimensions}
+                  onChange={handleChange}
+                  className="input w-full"
+                />
+              </div>
+            </div>
+          </div>
+          
           {/* Actions */}
           <div className="bg-card rounded-xl border border-border p-5 sticky top-6">
             <h3 className="text-lg font-semibold text-text mb-4">Actions</h3>
@@ -821,7 +892,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
               >
                 {loading ? (
                   <>
-                    <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Uploading Product...
                   </>
                 ) : (
@@ -843,7 +914,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
               
               <div className="text-xs text-text-muted pt-3 border-t border-border">
                 <p className="flex items-center gap-1">
-                  <CheckCircle size={12} className="text-success" />
+                  <CheckCircle size={12} className="text-success" aria-hidden="true" />
                   Fields marked with <span className="text-error">*</span> are required
                 </p>
               </div>

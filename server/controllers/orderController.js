@@ -3,20 +3,17 @@ import User from "../models/User.js";
 import Product from "../models/Product.js";
 import Address from "../models/Address.js";
 
-
 const generateOrderNumber = () => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 6).toUpperCase();
   return `ORD-${timestamp}-${random}`;
 };
 
-
 const calculateShippingFee = (totalItems, pincode) => {
   const baseFee = 50;
   const perItemFee = 10;
   return baseFee + (totalItems * perItemFee);
 };
-
 
 const isCODAvailable = (pincode, orderAmount) => {
   const unavailablePincodes = ["123456", "654321", "111111"];
@@ -33,11 +30,8 @@ const isCODAvailable = (pincode, orderAmount) => {
   return true;
 };
 
-
 export const placeOrder = async (req, res) => {
   try {
-    console.log("=== PLACE ORDER START ===");
-    
     const userId = req.user?.id || req.user?._id;
     
     if (!userId) {
@@ -55,9 +49,6 @@ export const placeOrder = async (req, res) => {
       notes,
       couponCode 
     } = req.body;
-    
-    console.log("Request from user:", userId);
-    console.log("Request body:", { items, shippingAddressId, paymentMethod });
 
     const user = await User.findById(userId);
     if (!user) {
@@ -196,11 +187,6 @@ export const placeOrder = async (req, res) => {
     });
 
     const savedOrder = await order.save();
-    
-    console.log("Order created:", {
-      orderId: savedOrder._id,
-      orderNumber: savedOrder.orderNumber
-    });
 
     if (!user.orderHistory || !Array.isArray(user.orderHistory)) {
       user.orderHistory = [];
@@ -221,7 +207,6 @@ export const placeOrder = async (req, res) => {
     }
     
     await user.save();
-    console.log("User order history updated. Total orders:", user.orderHistory.length);
 
     for (const item of validatedItems) {
       await Product.findByIdAndUpdate(
@@ -235,8 +220,6 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    console.log("Product stock updated");
-
     return res.status(201).json({
       success: true,
       message: "Order placed successfully",
@@ -245,10 +228,6 @@ export const placeOrder = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("=== ORDER PLACEMENT ERROR ===");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
@@ -264,7 +243,6 @@ export const placeOrder = async (req, res) => {
     });
   }
 };
-
 
 export const getMyOrders = async (req, res) => {
   try {
@@ -284,7 +262,7 @@ export const getMyOrders = async (req, res) => {
     
     const user = await User.findById(userId).select("orderHistory");
     
-    res.json({
+    return res.status(200).json({
       success: true,
       totalOrders: orders.length,
       orders: orders.map(order => ({
@@ -308,14 +286,12 @@ export const getMyOrders = async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Get my orders error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch orders"
     });
   }
 };
-
 
 export const getOrderById = async (req, res) => {
   try {
@@ -343,7 +319,7 @@ export const getOrderById = async (req, res) => {
       });
     }
     
-    res.json({
+    return res.status(200).json({
       success: true,
       order: {
         _id: order._id,
@@ -365,21 +341,17 @@ export const getOrderById = async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Get order error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch order"
     });
   }
 };
 
-
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const orderId = req.params.id;
-    
-    console.log("Update order status:", { orderId, status });
     
     if (!status) {
       return res.status(400).json({
@@ -415,21 +387,19 @@ export const updateOrderStatus = async (req, res) => {
     
     await order.save();
     
-    res.json({
+    return res.status(200).json({
       success: true,
       message: `Order status updated to ${status}`,
       order: order
     });
     
   } catch (error) {
-    console.error("Update order status error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message || "Failed to update order status"
     });
   }
 };
-
 
 export const cancelOrder = async (req, res) => {
   try {
@@ -438,12 +408,8 @@ export const cancelOrder = async (req, res) => {
     const userRole = req.user?.role;
     const { reason } = req.body;
     
-    console.log("Cancel order request:", { orderId, userId, userRole, reason });
-    
-    // Build query based on role
     let query = { _id: orderId };
     
-    // If not admin, only allow cancellation of user's own orders
     if (userRole !== "admin") {
       query.user = userId;
     }
@@ -457,7 +423,6 @@ export const cancelOrder = async (req, res) => {
       });
     }
     
-    // Check if order can be cancelled
     const cancellableStatuses = ["pending", "processing"];
     if (!cancellableStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
@@ -466,7 +431,6 @@ export const cancelOrder = async (req, res) => {
       });
     }
     
-    // Update order status
     order.orderStatus = "cancelled";
     order.cancelledAt = new Date();
     if (reason) {
@@ -475,7 +439,6 @@ export const cancelOrder = async (req, res) => {
     
     await order.save();
     
-    // Restore product stock
     if (order.items && order.items.length > 0) {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
@@ -485,21 +448,19 @@ export const cancelOrder = async (req, res) => {
       }
     }
     
-    res.json({
+    return res.status(200).json({
       success: true,
       message: "Order cancelled successfully",
       order: order
     });
     
   } catch (error) {
-    console.error("Cancel order error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message || "Failed to cancel order"
     });
   }
 };
-
 
 export const getAllOrders = async (req, res) => {
   try {
@@ -546,7 +507,7 @@ export const getAllOrders = async (req, res) => {
     
     const totalRevenue = revenueResult[0]?.totalRevenue || 0;
     
-    res.json({
+    return res.status(200).json({
       success: true,
       orders,
       pagination: {
@@ -562,8 +523,7 @@ export const getAllOrders = async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Get all orders error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch orders"
     });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { 
@@ -26,24 +26,48 @@ const Wishlist = () => {
   const [addingToCart, setAddingToCart] = useState(null);
   const [isFetching, setIsFetching] = useState(false);
 
+  const abortControllerRef = useRef(null);
+  const isMounted = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Fetch wishlist function
   const fetchWishlist = useCallback(async () => {
     if (!user?.id) return;
     
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
       setIsFetching(true);
       const response = await Axios({
         ...summaryApi().getWishlist,
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        signal: abortControllerRef.current.signal,
       });
       
-      if (response.data.success) {
+      if (isMounted.current && response.data?.success) {
         dispatch(setWishlist(response.data.data || []));
       }
     } catch (error) {
-      console.error("Failed to fetch wishlist", error);
+      if (isMounted.current && error.name !== 'AbortError') {
+        console.error("Failed to fetch wishlist", error);
+      }
     } finally {
-      setIsFetching(false);
+      if (isMounted.current) {
+        setIsFetching(false);
+      }
     }
   }, [user?.id, dispatch]);
 
@@ -54,31 +78,24 @@ const Wishlist = () => {
     }
   }, [user?.id, fetchWishlist]);
 
-  // Listen for route changes to refresh wishlist
+  // Refresh when page becomes visible
   useEffect(() => {
-    const handleRouteChange = () => {
-      if (user?.id) {
-        fetchWishlist();
-      }
-    };
-    
-    // Refresh when page becomes visible (user comes back from product page)
     const handleVisibilityChange = () => {
-      if (!document.hidden && user?.id) {
+      if (!document.hidden && user?.id && isMounted.current) {
         fetchWishlist();
       }
     };
     
-    window.addEventListener('focus', handleRouteChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      window.removeEventListener('focus', handleRouteChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user?.id, fetchWishlist]);
 
   const handleRemoveItem = async (productId) => {
+    if (!productId) return;
+
     try {
       const response = await Axios({
         ...summaryApi().removeFromWishlist,
@@ -86,18 +103,19 @@ const Wishlist = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      if (response.data.success) {
+      if (isMounted.current && response.data?.success) {
         dispatch(removeFromWishlist(productId));
         toast.success("Item removed from wishlist");
         setItemToRemove(null);
-        // Refresh to ensure sync
         fetchWishlist();
-      } else {
-        toast.error(response.data.message || "Failed to remove item");
+      } else if (isMounted.current) {
+        toast.error(response.data?.message || "Failed to remove item");
       }
     } catch (error) {
-      console.error("Remove from wishlist error:", error);
-      toast.error("Failed to remove item");
+      if (isMounted.current) {
+        console.error("Remove from wishlist error:", error);
+        toast.error("Failed to remove item");
+      }
     }
   };
 
@@ -108,17 +126,19 @@ const Wishlist = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      if (response.data.success) {
+      if (isMounted.current && response.data?.success) {
         dispatch(clearWishlist());
         toast.success("Wishlist cleared successfully");
         setShowClearConfirm(false);
         fetchWishlist();
-      } else {
-        toast.error(response.data.message || "Failed to clear wishlist");
+      } else if (isMounted.current) {
+        toast.error(response.data?.message || "Failed to clear wishlist");
       }
     } catch (error) {
-      console.error("Clear wishlist error:", error);
-      toast.error("Failed to clear wishlist");
+      if (isMounted.current) {
+        console.error("Clear wishlist error:", error);
+        toast.error("Failed to clear wishlist");
+      }
     }
   };
 
@@ -129,7 +149,7 @@ const Wishlist = () => {
       return;
     }
 
-    if (product.stock === 0) {
+    if (!product || product.stock === 0) {
       toast.error("Product is out of stock");
       return;
     }
@@ -145,20 +165,24 @@ const Wishlist = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      if (response.data.success) {
+      if (isMounted.current && response.data?.success) {
         dispatch(addToCart({ 
           productId: product, 
           quantity: 1 
         }));
         toast.success("Added to cart!");
-      } else {
-        toast.error(response.data.message || "Failed to add to cart");
+      } else if (isMounted.current) {
+        toast.error(response.data?.message || "Failed to add to cart");
       }
     } catch (error) {
-      console.error("Add to cart error:", error);
-      toast.error("Failed to add to cart");
+      if (isMounted.current) {
+        console.error("Add to cart error:", error);
+        toast.error("Failed to add to cart");
+      }
     } finally {
-      setAddingToCart(null);
+      if (isMounted.current) {
+        setAddingToCart(null);
+      }
     }
   };
 
@@ -167,10 +191,14 @@ const Wishlist = () => {
     
     setLoading(true);
     let successCount = 0;
+    const failedProducts = [];
     
     for (const item of wishlistItems) {
       const product = item.productId || item;
-      if (product.stock === 0) continue;
+      if (product.stock === 0) {
+        failedProducts.push(product.name);
+        continue;
+      }
       
       try {
         const response = await Axios({
@@ -182,37 +210,45 @@ const Wishlist = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
-        if (response.data.success) {
+        if (response.data?.success) {
           dispatch(addToCart({ 
             productId: product, 
             quantity: 1 
           }));
           successCount++;
+        } else {
+          failedProducts.push(product.name);
         }
       } catch (error) {
         console.error("Add to cart error:", error);
+        failedProducts.push(product.name);
       }
     }
     
-    if (successCount > 0) {
-      toast.success(`${successCount} item(s) added to cart!`);
-      // Refresh wishlist after moving items
-      fetchWishlist();
-    } else {
-      toast.error("No items could be added to cart");
+    if (isMounted.current) {
+      if (successCount > 0) {
+        toast.success(`${successCount} item(s) added to cart!`);
+        if (failedProducts.length > 0) {
+          toast.error(`${failedProducts.length} item(s) could not be added (out of stock)`);
+        }
+        fetchWishlist();
+      } else {
+        toast.error("No items could be added to cart");
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getRatingStars = (rating) => {
     const stars = [];
-    const fullStars = Math.floor(rating || 0);
-    const hasHalfStar = (rating || 0) % 1 >= 0.5;
+    const numRating = rating || 0;
+    const fullStars = Math.floor(numRating);
+    const hasHalfStar = numRating % 1 >= 0.5;
     
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={i} size={14} className="fill-accent text-accent" />);
+    for (let i = 0; i < fullStars && i < 5; i++) {
+      stars.push(<Star key={`star-${i}`} size={14} className="fill-accent text-accent" />);
     }
-    if (hasHalfStar) {
+    if (hasHalfStar && stars.length < 5) {
       stars.push(<StarHalf key="half" size={14} className="fill-accent text-accent" />);
     }
     const emptyStars = 5 - stars.length;
@@ -222,12 +258,15 @@ const Wishlist = () => {
     return stars;
   };
 
+  // Fix: Import name was Wishlistt but export is Wishlist
+  // Make sure your export matches the import
+
   if (!user?.id) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-4 fade-in">
         <div className="max-w-md text-center">
           <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6">
-            <Heart className="w-12 h-12 text-primary" />
+            <Heart className="w-12 h-12 text-primary" aria-hidden="true" />
           </div>
           <h2 className="text-2xl font-display font-bold text-text mb-3">
             Your Wishlist Awaits
@@ -237,7 +276,7 @@ const Wishlist = () => {
           </p>
           <button
             onClick={() => navigate("/login")}
-            className="btn btn-primary px-8 py-3"
+            className="btn-primary px-8 py-3 rounded-lg"
           >
             Login to Continue
           </button>
@@ -252,7 +291,7 @@ const Wishlist = () => {
         <div className="container-narrow">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="spinner w-12 h-12 mb-4"></div>
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-text-muted">Loading your wishlist...</p>
             </div>
           </div>
@@ -267,7 +306,7 @@ const Wishlist = () => {
         <div className="container-narrow">
           <div className="bg-card rounded-2xl border border-border p-12 text-center">
             <div className="w-24 h-24 mx-auto rounded-full bg-bg-alt flex items-center justify-center mb-6">
-              <Heart className="w-12 h-12 text-text-muted" />
+              <Heart className="w-12 h-12 text-text-muted" aria-hidden="true" />
             </div>
             <h2 className="text-2xl font-display font-bold text-text mb-3">
               Your Wishlist is Empty
@@ -277,7 +316,7 @@ const Wishlist = () => {
             </p>
             <button
               onClick={() => navigate("/")}
-              className="btn btn-primary px-8 py-3"
+              className="btn-primary px-8 py-3 rounded-lg"
             >
               Start Shopping
             </button>
@@ -293,7 +332,7 @@ const Wishlist = () => {
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
+            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-primary to-accent" aria-hidden="true"></div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-text">
               My Wishlist
             </h1>
@@ -306,7 +345,7 @@ const Wishlist = () => {
         {/* Action Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-card rounded-xl border border-border">
           <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-primary" />
+            <Heart className="w-5 h-5 text-primary" aria-hidden="true" />
             <span className="text-text font-medium">
               {wishlistItems.length} {wishlistItems.length === 1 ? 'Item' : 'Items'} in Wishlist
             </span>
@@ -315,7 +354,7 @@ const Wishlist = () => {
             {wishlistItems.length > 1 && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="btn btn-outline flex items-center gap-2"
+                className="btn-outline flex items-center gap-2 px-4 py-2 rounded-lg"
               >
                 <Trash2 size={16} />
                 Clear All
@@ -324,7 +363,7 @@ const Wishlist = () => {
             <button
               onClick={handleMoveAllToCart}
               disabled={loading}
-              className="btn btn-primary flex items-center gap-2"
+              className="btn-primary flex items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart size={16} />
               Move All to Cart
@@ -347,8 +386,11 @@ const Wishlist = () => {
                 <Link to={`/product/${product._id}`} className="block relative overflow-hidden aspect-square">
                   <img
                     src={product.image?.[0] || product.image || "/placeholder.png"}
-                    alt={product.name}
+                    alt={product.name || "Product"}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      e.target.src = "/placeholder.png";
+                    }}
                   />
                   {product.discount > 0 && (
                     <span className="absolute top-3 left-3 bg-accent text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -371,12 +413,12 @@ const Wishlist = () => {
                 <div className="p-4">
                   <Link to={`/product/${product._id}`}>
                     <h3 className="font-semibold text-text hover:text-primary transition-colors line-clamp-2 min-h-[48px]">
-                      {product.name}
+                      {product.name || "Unnamed Product"}
                     </h3>
                   </Link>
 
                   {/* Rating */}
-                  {product.rating && (
+                  {product.rating > 0 && (
                     <div className="flex items-center gap-1 mt-2">
                       <div className="flex items-center gap-0.5">
                         {getRatingStars(product.rating)}
@@ -390,18 +432,18 @@ const Wishlist = () => {
                   {/* Price */}
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <span className="text-xl font-bold gradient-text">
-                      ₹{product.price?.toLocaleString('en-IN')}
+                      ₹{(product.price || 0).toLocaleString('en-IN')}
                     </span>
-                    {product.originalPrice && product.originalPrice > product.price && (
+                    {product.originalPrice && product.originalPrice > (product.price || 0) && (
                       <span className="text-sm text-text-muted line-through">
-                        ₹{product.originalPrice?.toLocaleString('en-IN')}
+                        ₹{product.originalPrice.toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>
 
                   {/* Stock Status */}
                   <div className="mt-2">
-                    {product.stock > 0 ? (
+                    {(product.stock || 0) > 0 ? (
                       <span className="text-xs text-success flex items-center gap-1">
                         <Shield size={12} />
                         In Stock
@@ -418,11 +460,11 @@ const Wishlist = () => {
                   <div className="mt-4 flex gap-2">
                     <button
                       onClick={() => handleAddToCart(product)}
-                      disabled={isAdding || product.stock === 0}
-                      className="flex-1 btn btn-primary py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      disabled={isAdding || (product.stock || 0) === 0}
+                      className="flex-1 btn-primary py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-lg"
                     >
                       {isAdding ? (
-                        <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <>
                           <ShoppingCart size={14} />
@@ -447,21 +489,21 @@ const Wishlist = () => {
         {/* Benefits Section */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3 p-4 rounded-xl bg-bg-alt border border-border">
-            <Truck className="w-8 h-8 text-primary" />
+            <Truck className="w-8 h-8 text-primary" aria-hidden="true" />
             <div>
               <p className="font-semibold text-text">Free Shipping</p>
               <p className="text-xs text-text-muted">On orders over ₹999</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4 rounded-xl bg-bg-alt border border-border">
-            <CreditCard className="w-8 h-8 text-primary" />
+            <CreditCard className="w-8 h-8 text-primary" aria-hidden="true" />
             <div>
               <p className="font-semibold text-text">Secure Payment</p>
               <p className="text-xs text-text-muted">100% secure transactions</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4 rounded-xl bg-bg-alt border border-border">
-            <Shield className="w-8 h-8 text-primary" />
+            <Shield className="w-8 h-8 text-primary" aria-hidden="true" />
             <div>
               <p className="font-semibold text-text">Easy Returns</p>
               <p className="text-xs text-text-muted">30 days return policy</p>
@@ -473,28 +515,30 @@ const Wishlist = () => {
       {/* Remove Item Confirmation */}
       {itemToRemove && (
         <ConfirmBox
+          isOpen={!!itemToRemove}
           title="Remove Item"
           message="Are you sure you want to remove this item from your wishlist?"
           confirmText="Remove"
           cancelText="Cancel"
           confirmColor="red"
-          close={() => setItemToRemove(null)}
-          cancel={() => setItemToRemove(null)}
-          confirm={() => handleRemoveItem(itemToRemove)}
+          onClose={() => setItemToRemove(null)}
+          onCancel={() => setItemToRemove(null)}
+          onConfirm={() => handleRemoveItem(itemToRemove)}
         />
       )}
 
       {/* Clear All Confirmation */}
       {showClearConfirm && (
         <ConfirmBox
+          isOpen={showClearConfirm}
           title="Clear Wishlist"
           message={`Are you sure you want to remove all ${wishlistItems.length} items from your wishlist? This action cannot be undone.`}
           confirmText="Clear All"
           cancelText="Cancel"
           confirmColor="red"
-          close={() => setShowClearConfirm(false)}
-          cancel={() => setShowClearConfirm(false)}
-          confirm={handleClearWishlist}
+          onClose={() => setShowClearConfirm(false)}
+          onCancel={() => setShowClearConfirm(false)}
+          onConfirm={handleClearWishlist}
         />
       )}
     </div>

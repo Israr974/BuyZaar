@@ -1,5 +1,4 @@
-
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import App from "../App";
 import Home from "../pages/Home";
 import SearchPage from "../pages/SearchPage";
@@ -37,222 +36,211 @@ import TermsAndConditions from "../pages/TermsAndConditions";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import ReturnPolicy from "../pages/ReturnPolicy";
 import ShippingInfo from "../pages/ShippingInfo";
+import Setting from "../pages/Setting"
+import HelpCenter from "../pages/HelpCenter"
 
+// ================= CONSTANTS =================
+const ROUTES = {
+  // Public Routes
+  HOME: "/",
+  SEARCH: "/search",
+  LOGIN: "/login",
+  REGISTER: "/register",
+  FORGOT_PASSWORD: "/forgot-password",
+  VERIFY_OTP: "/verify-otp",
+  RESET_PASSWORD: "/reset-password",
+  USER_MOBILE: "/user",
+  
+  // Product Routes
+  PRODUCT: "/product/:product",
+  CATEGORY: "/:category",
+  CATEGORY_SUBCATEGORY: "/:category/:subcategory",
+  
+  // Checkout Routes
+  CHECKOUT: "/checkout",
+  PAYMENT_COD: "/payment/cod",
+  PAYMENT_CARD: "/payment/card",
+  PAYMENT_UPI: "/payment/upi",
+  PAYMENT_SUCCESS: "/payment/success",
+  PAYMENT_FAIL: "/payment/fail",
+  
+  // Dashboard Routes (Auth Required)
+  DASHBOARD: "/dashboard",
+  DASHBOARD_PROFILE: "/dashboard/profile",
+  DASHBOARD_MYORDERS: "/dashboard/myorder",
+  DASHBOARD_ADDRESS: "/dashboard/address",
+  DASHBOARD_WISHLIST: "/dashboard/wishlist",
+  DASHBOARD_SETTINGS: "/dashboard/setting",
+  DASHBOARD_HELP: "/dashboard/help",
+  
+  // Admin Routes
+  ADMIN_CATEGORY: "/dashboard/category",
+  ADMIN_SUBCATEGORY: "/dashboard/subcategory",
+  ADMIN_UPLOAD_PRODUCT: "/dashboard/uploadproduct",
+  ADMIN_PRODUCTS: "/dashboard/product",
+  ADMIN_ORDERS: "/dashboard/order",
+  
+  // Info Routes
+  ABOUT: "/about",
+  CONTACT: "/contact",
+  FAQ: "/faq",
+  TERMS: "/terms",
+  PRIVACY: "/privacy",
+  RETURN_POLICY: "/return-policy",
+  SHIPPING_INFO: "/shipping-info",
+};
 
+// ================= PUBLIC ROUTES =================
+const publicRoutes = [
+  { path: ROUTES.HOME, element: <Home /> },
+  { path: ROUTES.SEARCH, element: <SearchPage /> },
+  { path: ROUTES.LOGIN, element: <Login /> },
+  { path: ROUTES.REGISTER, element: <Register /> },
+  { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPassword /> },
+  { path: ROUTES.VERIFY_OTP, element: <OtpVerification /> },
+  { path: ROUTES.RESET_PASSWORD, element: <ResetPassword /> },
+  { path: ROUTES.USER_MOBILE, element: <MobileUser /> },
+];
 
-const router = createBrowserRouter([{
+// ================= PRODUCT ROUTES =================
+const productRoutes = [
+  { path: ROUTES.PRODUCT, element: <ProductDisplayPage /> },
+  { path: ROUTES.CATEGORY, children: [
+    { path: ":subcategory", element: <ProductList /> }
+  ]},
+];
+
+// ================= CHECKOUT ROUTES (Auth Required) =================
+const checkoutRoutes = [
+  { path: ROUTES.CHECKOUT, element: <RequireAuth><CheckOutPage /></RequireAuth> },
+  { path: ROUTES.PAYMENT_COD, element: <RequireAuth><CODPayment /></RequireAuth> },
+  { path: ROUTES.PAYMENT_CARD, element: <CardPayment /> },
+  { path: ROUTES.PAYMENT_UPI, element: <UPIPayment /> },
+  { path: ROUTES.PAYMENT_SUCCESS, element: <PaymentSuccess /> },
+  { path: ROUTES.PAYMENT_FAIL, element: <PaymentFail /> },
+];
+
+// ================= INFO ROUTES =================
+const infoRoutes = [
+  { path: ROUTES.ABOUT, element: <AboutUs /> },
+  { path: ROUTES.CONTACT, element: <ContactUs /> },
+  { path: ROUTES.FAQ, element: <FAQ /> },
+  { path: ROUTES.TERMS, element: <TermsAndConditions /> },
+  { path: ROUTES.PRIVACY, element: <PrivacyPolicy /> },
+  { path: ROUTES.RETURN_POLICY, element: <ReturnPolicy /> },
+  { path: ROUTES.SHIPPING_INFO, element: <ShippingInfo /> },
+];
+
+// ================= DASHBOARD ROUTES =================
+const dashboardChildren = [
+  { path: "profile", element: <Profile /> },
+  { path: "myorder", element: <MyOrder /> },
+  { path: "address", element: <Address /> },
+  { path: "wishlist", element: <Wishlist /> },
+  { path: "setting", element: <Setting /> },
+  { path: "help", element: <HelpCenter /> },
+  
+  // Admin routes
+  { path: "category", element: <AdminPermission><Category /></AdminPermission> },
+  { path: "order", element: <AdminPermission><Orders /></AdminPermission> },
+  { path: "subcategory", element: <AdminPermission><SubCategory /></AdminPermission> },
+  { path: "uploadproduct", element: <AdminPermission><UploadProduct /></AdminPermission> },
+  { path: "product", element: <AdminPermission><ProductAdmin /></AdminPermission> },
+];
+
+// ================= ERROR HANDLING =================
+const ErrorBoundary = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-text mb-4">404</h1>
+        <p className="text-text-muted mb-6">Page not found</p>
+        <a href="/" className="btn-primary px-6 py-2 rounded-lg">
+          Go Home
+        </a>
+      </div>
+    </div>
+  );
+};
+
+// ================= REDIRECTS =================
+const redirects = [
+  { path: "/admin", element: <Navigate to="/dashboard" replace /> },
+  { path: "/account", element: <Navigate to="/dashboard/profile" replace /> },
+  { path: "/cart", element: <Navigate to="/checkout" replace /> },
+];
+
+// ================= ROUTER CONFIGURATION =================
+const router = createBrowserRouter([
+  {
     path: "/",
     element: <App />,
+    errorElement: <ErrorBoundary />,
     children: [
-        {
-            path: "",
-            element: <Home />
-        },
-        {
-            path: "search",
-            element: <SearchPage />
-        },
-        {
-            path: "login",
-            element: <Login />
-        },
-        {
-            path: "register",
-            element: <Register />
-        },
+      // Public Routes
+      ...publicRoutes,
+      
+      // Product Routes
+      ...productRoutes,
+      
+      // Checkout Routes
+      ...checkoutRoutes,
+      
+      // Info Routes
+      ...infoRoutes,
+      
+      // Redirects
+      ...redirects,
+      
+      // Dashboard Route
+      {
+        path: ROUTES.DASHBOARD,
+        element: <RequireAuth><Dashboard /></RequireAuth>,
+        children: dashboardChildren,
+      },
+    ],
+  },
+  // Catch all route for 404
+  {
+    path: "*",
+    element: <ErrorBoundary />,
+  },
+]);
 
-        {
-            path: "forgot-password",
-            element: <ForgotPassword />
-        },
-        {
-            path: "verify-otp",
-            element: <OtpVerification />
-        },
-        {
-            path: "reset-password",
-            element: <ResetPassword />
-        },
-        {
-            path: "user",
-            element: <MobileUser />
-        },
+// ================= HELPER FUNCTIONS =================
+export const getRoutePath = (routeName, params = {}) => {
+  let path = ROUTES[routeName] || routeName;
+  
+  Object.keys(params).forEach(key => {
+    path = path.replace(`:${key}`, params[key]);
+  });
+  
+  return path;
+};
 
+export const isActiveRoute = (pathname, route) => {
+  if (route === ROUTES.HOME) {
+    return pathname === route;
+  }
+  return pathname.startsWith(route);
+};
 
-        // {
-        //     path: "dashboard",
-        //     element:
+export const navigateToProduct = (productId, productName) => {
+  const slug = productName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || productId;
+  return `/product/${slug}-${productId}`;
+};
 
-        //         <RequireAuth><Dashboard /></RequireAuth>,
+export const navigateToCategory = (categoryId, categoryName) => {
+  const slug = categoryName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || categoryId;
+  return `/${slug}-${categoryId}`;
+};
 
+export const navigateToSubcategory = (categoryId, categoryName, subcategoryId, subcategoryName) => {
+  const categorySlug = categoryName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || categoryId;
+  const subcategorySlug = subcategoryName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || subcategoryId;
+  return `/${categorySlug}-${categoryId}/${subcategorySlug}-${subcategoryId}`;
+};
 
-
-        //     children: [
-        //         {
-        //             path: "profile",
-        //             element: <Profile />
-        //         },
-        //         {
-        //             path: "myorder",
-        //             element: <MyOrder />
-        //         },
-        //         {
-        //             path: "address",
-        //             element: <Address />
-        //         },
-        //         {
-        //             path: "wishlist",
-        //             element: <Wishlist />
-        //         },
-        //         {
-        //             path: "category",
-        //             element: <AdminPermission><Category /></AdminPermission>
-        //         },
-        //         {
-        //             path: "order",
-        //             element: <AdminPermission><Orders /></AdminPermission>
-        //         },
-        //         {
-        //             path: "subcategory",
-        //             element: <AdminPermission><SubCategory /></AdminPermission>
-        //         },
-        //         {
-        //             path: "uploadproduct",
-        //             element: <AdminPermission><UploadProduct /></AdminPermission>
-        //         },
-        //         {
-        //             path: "product",
-        //             element: <AdminPermission><ProductAdmin /></AdminPermission>
-        //         }
-
-        //     ]
-        // },
-
-        // In router.jsx - Update the dashboard route
-
-{
-  path: "dashboard",
-  element: <RequireAuth><Dashboard /></RequireAuth>,  // No role required, just login
-  children: [
-    {
-      path: "profile",
-      element: <Profile />
-    },
-    {
-      path: "myorder",
-      element: <MyOrder />
-    },
-    {
-      path: "address",
-      element: <Address />
-    },
-    {
-      path: "wishlist",
-      element: <Wishlist />
-    },
-    // Admin only routes - use AdminPermission or AdminRoute
-    {
-      path: "category",
-      element: <AdminPermission><Category /></AdminPermission>
-    },
-    {
-      path: "order",
-      element: <AdminPermission><Orders /></AdminPermission>
-    },
-    {
-      path: "subcategory",
-      element: <AdminPermission><SubCategory /></AdminPermission>
-    },
-    {
-      path: "uploadproduct",
-      element: <AdminPermission><UploadProduct /></AdminPermission>
-    },
-    {
-      path: "product",
-      element: <AdminPermission><ProductAdmin /></AdminPermission>
-    }
-  ]
-},
-        {
-            path: ":category",
-            children: [
-                {
-                    path: ":subcategory",
-                    element: <ProductList />
-                }
-            ]
-
-        },
-        {
-            path: "product/:product",
-            element: <ProductDisplayPage />
-        },
-        {
-            path: "checkout",
-            element: (
-                <RequireAuth>
-                    <CheckOutPage />
-                </RequireAuth>
-            ),
-        },
-        {
-            path: "payment/cod",
-            element: (
-                <RequireAuth>
-                    <CODPayment />
-                </RequireAuth>
-            ),
-        },
-
-        {
-            path: "payment/card",
-            element: <CardPayment />
-        },
-        {
-            path: "payment/upi",
-            element: <UPIPayment />
-        },
-        {
-            path: "payment/success",
-            element: <PaymentSuccess />
-        },
-        {
-            path: "payment/fail",
-            element: <PaymentFail />
-        },
-
-        {
-  path: "about",
-  element: <AboutUs />
-},
-{
-  path: "contact",
-  element: <ContactUs />
-},
-{
-  path: "faq",
-  element: <FAQ />
-},
-{
-  path: "terms",
-  element: <TermsAndConditions />
-},
-{
-  path: "privacy",
-  element: <PrivacyPolicy />
-},
-{
-  path: "return-policy",
-  element: <ReturnPolicy />
-},
-{
-  path: "shipping-info",
-  element: <ShippingInfo />
-}
-
-
-
-    ]
-
-}])
+// ================= EXPORT =================
+export { ROUTES };
 export default router;

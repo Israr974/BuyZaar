@@ -4,6 +4,7 @@ import {
   createSubCategory,
   getSubcategory,
   updateSubCategory,
+  getSubCategoryById,
   deleteSubCategory
 } from "../controllers/subCategoryController.js";
 
@@ -17,7 +18,7 @@ subCategoryRouter.get("/", getSubcategory);
 
 
 subCategoryRouter.put("/:id", auth, updateSubCategory);
-
+subCategoryRouter.get("/get/:id", getSubCategoryById);
 
 subCategoryRouter.delete("/:id", auth, deleteSubCategory);
 

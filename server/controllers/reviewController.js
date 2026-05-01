@@ -47,7 +47,6 @@ export const addReview = async (req, res) => {
       isVerifiedPurchase,
     });
 
-    // Update product rating
     const allReviews = await Review.find({ product: productId, status: "approved" });
     const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
     const reviewCount = allReviews.length;
@@ -64,7 +63,6 @@ export const addReview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Add review error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
@@ -106,7 +104,6 @@ export const getProductReviews = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get reviews error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
@@ -135,7 +132,6 @@ export const updateReview = async (req, res) => {
 
     await review.save();
 
-    // Update product rating
     const allReviews = await Review.find({ product: review.product, status: "approved" });
     const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
     const reviewCount = allReviews.length;
@@ -152,7 +148,6 @@ export const updateReview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update review error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
@@ -176,7 +171,6 @@ export const deleteReview = async (req, res) => {
 
     await review.deleteOne();
 
-    // Update product rating
     const allReviews = await Review.find({ product: review.product, status: "approved" });
     const avgRating = allReviews.length > 0
       ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
@@ -194,7 +188,6 @@ export const deleteReview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Delete review error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
@@ -235,7 +228,6 @@ export const markHelpful = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Mark helpful error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",

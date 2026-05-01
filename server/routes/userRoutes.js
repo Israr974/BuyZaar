@@ -55,7 +55,8 @@ import userModelRegister, {
   resendVerificationEmail,
   uploadProfilePicture,
   updateProfilePicture,
-  deleteProfilePicture
+  deleteProfilePicture,
+  deleteAccount
 } from "../controllers/userModel.js";
 import auth from "../middleware/auth.js";
 import { upload } from '../middleware/multer.js';
@@ -73,6 +74,7 @@ userRoute.post("/refresh-token", refreshTokenController);
 userRoute.post("/logout", auth, userLogout);
 userRoute.put("/update", auth, updateUserDetails);
 userRoute.get("/me", auth, getUserDetails);
+userRoute.delete("/delete-account", auth, deleteAccount);
 
 // ========== PASSWORD ROUTES ==========
 userRoute.put("/forgot-password", forgotPassword);

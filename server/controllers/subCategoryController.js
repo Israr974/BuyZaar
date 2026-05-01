@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import SubCategory from "../models/SubCategory.js";
 import Product from "../models/Product.js"; 
 
-
 export const createSubCategory = async (req, res) => {
   try {
     const { name, image, category } = req.body;
@@ -27,7 +26,7 @@ export const createSubCategory = async (req, res) => {
       message: "SubCategory created successfully",
       success: true,
       error: false,
-      data: subCategory,
+      data: { ...subCategory.toObject(), productsCount: 0 },
     });
   } catch (error) {
     return res.status(500).json({
@@ -38,17 +37,43 @@ export const createSubCategory = async (req, res) => {
   }
 };
 
-
 export const getSubcategory = async (req, res) => {
   try {
     const subcategories = await SubCategory.find({})
       .sort({ createdAt: -1 })
       .populate("category", "name");
 
+    const subcategoryIds = subcategories.map(sub => sub._id);
+    
+    const productCounts = await Product.aggregate([
+      { $unwind: "$sub_category" },
+      { 
+        $match: { 
+          sub_category: { $in: subcategoryIds } 
+        } 
+      },
+      {
+        $group: {
+          _id: "$sub_category",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item._id.toString()] = item.count;
+    });
+
+    const enrichedSubcategories = subcategories.map(sub => ({
+      ...sub.toObject(),
+      productsCount: countMap[sub._id.toString()] || 0
+    }));
+
     return res.status(200).json({
       success: true,
       error: false,
-      data: subcategories,
+      data: enrichedSubcategories,
     });
   } catch (error) {
     return res.status(500).json({
@@ -58,7 +83,6 @@ export const getSubcategory = async (req, res) => {
     });
   }
 };
-
 
 export const updateSubCategory = async (req, res) => {
   try {
@@ -84,7 +108,7 @@ export const updateSubCategory = async (req, res) => {
     const updatedSubCategory = await SubCategory.findByIdAndUpdate(
       id,
       { name, image, category },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!updatedSubCategory) {
@@ -95,21 +119,24 @@ export const updateSubCategory = async (req, res) => {
       });
     }
 
+    const productCount = await Product.countDocuments({
+      sub_category: { $in: [id] }
+    });
+
     return res.status(200).json({
       success: true,
       error: false,
       message: "SubCategory updated successfully",
-      data: updatedSubCategory,
+      data: { ...updatedSubCategory.toObject(), productsCount: productCount },
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Server error",
     });
   }
 };
-
 
 export const deleteSubCategory = async (req, res) => {
   try {
@@ -123,16 +150,15 @@ export const deleteSubCategory = async (req, res) => {
       });
     }
 
-  
     const usedInProduct = await Product.countDocuments({
-      subCategory: id,
+      sub_category: { $in: [id] }
     });
 
     if (usedInProduct > 0) {
       return res.status(400).json({
         success: false,
         error: true,
-        message: "SubCategory is in use. Cannot delete",
+        message: `SubCategory is in use by ${usedInProduct} product(s). Cannot delete`,
       });
     }
 
@@ -146,10 +172,50 @@ export const deleteSubCategory = async (req, res) => {
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       error: false,
       message: "SubCategory deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: true,
+      message: error.message,
+    });
+  }
+};
+
+export const getSubCategoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Invalid SubCategory ID",
+      });
+    }
+
+    const subcategory = await SubCategory.findById(id).populate("category", "name");
+
+    if (!subcategory) {
+      return res.status(404).json({
+        success: false,
+        error: true,
+        message: "SubCategory not found",
+      });
+    }
+
+    const productCount = await Product.countDocuments({
+      sub_category: { $in: [id] }
+    });
+
+    return res.status(200).json({
+      success: true,
+      error: false,
+      data: { ...subcategory.toObject(), productsCount: productCount },
     });
   } catch (error) {
     return res.status(500).json({

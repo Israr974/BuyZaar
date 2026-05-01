@@ -1,9 +1,8 @@
-
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import morgan from 'morgan'; // Add for logging (optional)
+import morgan from 'morgan';
 import dotenv from 'dotenv';
 import connectDB from './config/connectDb.js';
 
@@ -21,34 +20,26 @@ import searchRoutes from './routes/searchRoutes.js';
 import wishlistRouter from './routes/wishlistRoutes.js';
 import reviewRouter from './routes/reviewRoutes.js';
 
-
-
-
-
 dotenv.config();
 
 const app = express();
 
 // ================= MIDDLEWARE =================
 
-// Logging (for development)
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// CORS - Fix typo
 const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -61,7 +52,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Security
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginOpenerPolicy: { policy: "same-origin" }
@@ -69,7 +59,6 @@ app.use(helmet({
 
 // ================= ROUTES =================
 
-// Health check
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
@@ -78,7 +67,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// API Routes
 app.use("/api/user", userRoute);
 app.use("/api/category", categoryRouter);
 app.use("/api/subcategory", subCategoryRouter);
@@ -92,7 +80,6 @@ app.use('/api/search', searchRoutes);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/reviews", reviewRouter);
 
-// Root route
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -103,7 +90,6 @@ app.get("/", (req, res) => {
 
 // ================= ERROR HANDLING =================
 
-// 404 - Route not found
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -111,11 +97,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
-  console.error("Error:", err.stack);
-  
-  // Handle specific error types
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -153,13 +135,8 @@ const PORT = process.env.PORT || 3030;
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(` Server running on port ${PORT}`);
-      console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(` Frontend URL: ${process.env.FRONTEND_URL}`);
-    });
+    app.listen(PORT, () => {});
   } catch (error) {
-    console.error(" Failed to start server:", error);
     process.exit(1);
   }
 };

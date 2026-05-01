@@ -3,26 +3,24 @@ import Product from "../models/Product.js";
 import SubCategory from "../models/SubCategory.js";
 import mongoose from "mongoose";
 
-
 export const AddCategory = async (req, res) => {
   try {
     const { name, image } = req.body;
 
     if (!name || !image) {
       return res.status(400).json({
-        message: "Name and image URL are required",
         success: false,
         error: true,
+        message: "Name and image URL are required",
       });
     }
-
 
     const exists = await Category.findOne({ name });
     if (exists) {
       return res.status(400).json({
-        message: "Category already exists",
         success: false,
         error: true,
+        message: "Category already exists",
       });
     }
 
@@ -30,27 +28,24 @@ export const AddCategory = async (req, res) => {
     const saved = await newCategory.save();
 
     return res.status(201).json({
-      message: "Category added successfully",
       success: true,
       error: false,
+      message: "Category added successfully",
       data: saved,
     });
   } catch (error) {
     return res.status(500).json({
-      message: error.message || "Server error",
       success: false,
       error: true,
+      message: error.message || "Server error",
     });
   }
 };
-
-
 
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find({}).sort({ createdAt: -1 });
     
-    // Get product count for each category
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
         const productCount = await Product.countDocuments({ 
@@ -63,13 +58,13 @@ export const getAllCategories = async (req, res) => {
       })
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       error: false,
       data: categoriesWithCount,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: true,
       message: error.message || "Failed to fetch categories",
@@ -98,10 +93,14 @@ export const updateCategory = async (req, res) => {
       });
     }
 
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (image) updateData.image = image;
+
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
-      { name, image },
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     );
 
     if (!updatedCategory) {
@@ -112,21 +111,20 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       error: false,
       message: "Category updated successfully",
       data: updatedCategory,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Server error",
     });
   }
 };
-
 
 export const deleteCategory = async (req, res) => {
   try {
@@ -140,21 +138,19 @@ export const deleteCategory = async (req, res) => {
       });
     }
 
-   
-    const checkSubCategory = await SubCategory.countDocuments({
+    const subCategoryCount = await SubCategory.countDocuments({
       category: { $in: [id] },
     });
 
-    
-    const checkProduct = await Product.countDocuments({
+    const productCount = await Product.countDocuments({
       category: { $in: [id] },
     });
 
-    if (checkProduct > 0 || checkSubCategory > 0) {
+    if (productCount > 0 || subCategoryCount > 0) {
       return res.status(400).json({
-        message: "Category already in use, can't delete",
         success: false,
         error: true,
+        message: "Category cannot be deleted as it is being used by products or subcategories",
       });
     }
 
@@ -168,16 +164,16 @@ export const deleteCategory = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       error: false,
       message: "Category deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: true,
-      message: error.message || error,
+      message: error.message || "Server error",
     });
   }
 };

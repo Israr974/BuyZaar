@@ -1,4 +1,3 @@
-export const validateUrlConverter=(name)=>{
-    const url=name.toString().replaceAll(" ","-").replaceAll(",","-").replaceAll("&","-")
-    return url
-}
+export const validateUrlConverter = (name) => {
+  return name.toString().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+};

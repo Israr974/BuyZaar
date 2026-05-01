@@ -1,8 +1,435 @@
+// import React, { useState, useEffect, useRef } from "react";
+// import { Link, useLocation, useNavigate } from "react-router-dom";
+// import { useSelector } from "react-redux";
+// import {
+//   Search, User, ShoppingBag, Menu, Heart, ChevronDown, Tag, X,
+//   ChevronLeft, ChevronRight
+// } from "lucide-react";
+// import useMobile from "../hooks/useMobile";
+// import DisplayCart from "./DisplayCart";
+// import ShowMenu from "./ShowMenu";
+// import DarkModeToggle from "./DarkModeToggle";
+// import { formatINR } from "../utils/formatINR";
+// import { validateUrlConverter } from "../utils/validateUrl";
+// import logo from "../assets/logoBuyZaar.svg"
+
+// const Header = () => {
+//   const [isMobile] = useMobile();
+//   const location = useLocation();
+//   const navigate = useNavigate();
+
+//   const [opencart, setOpencart] = useState(false);
+//   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+//   const [userMenuOpen, setUserMenuOpen] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+//   const categoriesContainerRef = useRef(null);
+//   const [showLeftArrow, setShowLeftArrow] = useState(false);
+//   const [showRightArrow, setShowRightArrow] = useState(false);
+
+//   const user = useSelector((state) => state.user);
+//   const cartitems = useSelector((state) => state.cart?.cartitems || []);
+//   const wishlistCount = useSelector((state) => state.wishlist?.items?.length || 0);
+//   const allCategories = useSelector((state) => state.product.allCategory);
+
+//   useEffect(() => {
+//     if (!user?.id) {
+//       setUserMenuOpen(false);
+//     }
+//   }, [user]);
+
+//   useEffect(() => {
+//     setMobileMenuOpen(false);
+//     setUserMenuOpen(false);
+//     setMobileSearchOpen(false);
+//   }, [location.pathname]);
+
+//   const checkScrollPosition = () => {
+//     if (categoriesContainerRef.current) {
+//       const { scrollLeft, scrollWidth, clientWidth } = categoriesContainerRef.current;
+//       setShowLeftArrow(scrollLeft > 0);
+//       setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 5);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const container = categoriesContainerRef.current;
+//     if (container) {
+//       checkScrollPosition();
+//       container.addEventListener('scroll', checkScrollPosition);
+//       window.addEventListener('resize', checkScrollPosition);
+//       return () => {
+//         container.removeEventListener('scroll', checkScrollPosition);
+//         window.removeEventListener('resize', checkScrollPosition);
+//       };
+//     }
+//   }, [allCategories]);
+
+//   const scrollCategories = (direction) => {
+//     if (categoriesContainerRef.current) {
+//       const scrollAmount = 200;
+//       const newScrollLeft = categoriesContainerRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+//       categoriesContainerRef.current.scrollTo({
+//         left: newScrollLeft,
+//         behavior: 'smooth'
+//       });
+//     }
+//   };
+
+//   const handleSearch = (e) => {
+//     e.preventDefault();
+//     if (searchQuery.trim()) {
+//       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+//       setMobileSearchOpen(false);
+//     }
+//   };
+
+//   const totalProducts = cartitems.length;
+//   const totalPrice = cartitems.reduce(
+//     (sum, item) => sum + (item.productId?.price || 0) * (item.quantity || 0),
+//     0
+//   );
+
+//   const isSearchPage = location.pathname === "/search";
+
+//   if (isSearchPage) {
+//     return null;
+//   }
+
+//   // Logo component for consistent styling
+//   const Logo = () => (
+//     <h1 className="text-xl md:text-2xl font-extrabold">
+//       <span className="text-blue-600">Buy</span>
+//       <span className="text-orange-500">Zaar</span>
+//     </h1>
+//   );
+
+//   return (
+//     <>
+//       <header className="sticky top-0 z-50 bg-card shadow-sm border-b border-border">
+//         {!isMobile ? (
+//           <div className="container-wide">
+//             <div className="flex items-center justify-between px-6 py-4 gap-4">
+//               <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
+//                 <div className="rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+//                   <img src={logo} alt="image" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
+//                 </div>
+//                 <div>
+//                   <Logo />
+//                   <p className="text-xs text-text-muted hidden lg:block">Just Buy It!</p>
+//                 </div>
+//               </Link>
+
+//               <div className="flex-1 max-w-2xl mx-4 lg:mx-8">
+//                 <form onSubmit={handleSearch} className="relative w-full">
+//                   <div className="relative w-full">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+//                       <Search className="w-5 h-5 text-text-muted" />
+//                     </div>
+//                     <input
+//                       type="text"
+//                       value={searchQuery}
+//                       onChange={(e) => setSearchQuery(e.target.value)}
+//                       placeholder="Search products, brands, and categories..."
+//                       className="w-full h-12 pl-11 pr-28 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text placeholder:text-text-muted/60"
+//                     />
+//                     <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+//                       <button type="submit" className="btn btn-primary px-4 py-1.5 text-sm whitespace-nowrap">
+//                         Search
+//                       </button>
+//                     </div>
+//                   </div>
+//                 </form>
+//               </div>
+
+//               <div className="flex items-center gap-3 flex-shrink-0">
+//                 <DarkModeToggle />
+
+//                 <button
+//                   onClick={() => navigate("/dashboard/wishlist")}
+//                   className="relative p-2 hover:bg-primary/5 rounded-lg transition group"
+//                 >
+//                   <Heart className="w-5 h-5 text-text-muted group-hover:text-primary" />
+//                   {wishlistCount > 0 && (
+//                     <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+//                       {wishlistCount}
+//                     </span>
+//                   )}
+//                 </button>
+
+//                 {user?.id ? (
+//                   <div className="relative">
+//                     <button
+//                       onClick={() => setUserMenuOpen(!userMenuOpen)}
+//                       className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/5 transition"
+//                     >
+//                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
+//                         {user?.name?.charAt(0).toUpperCase()}
+//                       </div>
+//                       <div className="text-left hidden lg:block">
+//                         <p className="text-sm font-semibold">{user?.name?.split(' ')[0] || "Account"}</p>
+//                         <p className="text-xs text-text-muted">My Account</p>
+//                       </div>
+//                       <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+//                     </button>
+
+//                     {userMenuOpen && (
+//                       <div className="absolute right-0 top-12 z-50 fade-in">
+//                         <ShowMenu
+//                           user={user}
+//                           onClose={() => setUserMenuOpen(false)}
+//                           isMobile={false}
+//                           wishlistCount={wishlistCount}
+//                         />
+//                       </div>
+//                     )}
+//                   </div>
+//                 ) : (
+//                   <button onClick={() => navigate("/login")} className="btn btn-primary px-5 py-2">
+//                     <User className="w-4 h-4 mr-2" />
+//                     Login
+//                   </button>
+//                 )}
+
+//                 <button
+//                   onClick={() => setOpencart(true)}
+//                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 transition group relative"
+//                 >
+//                   <div className="relative">
+//                     <ShoppingBag className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+//                     {totalProducts > 0 && (
+//                       <span className="absolute -top-2 -right-2 bg-accent text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+//                         {totalProducts}
+//                       </span>
+//                     )}
+//                   </div>
+//                   <div className="text-left hidden lg:block">
+//                     <p className="text-sm font-semibold">Cart</p>
+//                     <p className="text-xs text-text-muted">{formatINR(totalPrice)}</p>
+//                   </div>
+//                 </button>
+//               </div>
+//             </div>
+
+//             <div className="bg-gradient-primary border-t border-border/20 relative">
+//               <div className="relative px-6 py-3">
+//                 {showLeftArrow && (
+//                   <button
+//                     onClick={() => scrollCategories('left')}
+//                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+//                   >
+//                     <ChevronLeft size={18} />
+//                   </button>
+//                 )}
+
+//                 <div
+//                   ref={categoriesContainerRef}
+//                   className="flex items-center gap-6 overflow-x-auto scroll-smooth hide-scrollbar"
+//                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+//                 >
+//                   {allCategories.map((category) => (
+//                     <Link
+//                       key={category._id}
+//                       to={`/${validateUrlConverter(category.name)}-${category._id}/all-all`}
+//                       className="text-sm font-medium text-white/90 hover:text-white transition whitespace-nowrap py-1"
+//                     >
+//                       {category.name}
+//                     </Link>
+//                   ))}
+//                 </div>
+
+//                 {showRightArrow && (
+//                   <button
+//                     onClick={() => scrollCategories('right')}
+//                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+//                   >
+//                     <ChevronRight size={18} />
+//                   </button>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+//         ) : (
+//           <div className="px-4 py-3">
+//             <div className="flex items-center justify-between gap-2">
+//               <button
+//                 onClick={() => setMobileMenuOpen(true)}
+//                 className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/5"
+//               >
+//                 <Menu className="w-6 h-6 text-text" />
+//               </button>
+
+//               <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+//                 <img src={logo} alt="image" className="w-8 h-8 object-contain" />
+//                 <Logo />
+//               </Link>
+
+//               <div className="flex items-center gap-0.5 flex-shrink-0">
+//                 <DarkModeToggle />
+               
+//                 <button
+//                   onClick={() => navigate("/dashboard/wishlist")}
+//                   className="relative p-2 rounded-lg hover:bg-primary/5"
+//                 >
+//                   <Heart className="w-5 h-5 text-text-muted" />
+//                   {wishlistCount > 0 && (
+//                     <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-4 h-4 flex items-center justify-center rounded-full font-bold">
+//                       {wishlistCount}
+//                     </span>
+//                   )}
+//                 </button>
+                
+//                 <button
+//                   onClick={() => setOpencart(true)}
+//                   className="relative p-2 rounded-lg hover:bg-primary/5"
+//                 >
+//                   <ShoppingBag className="w-5 h-5 text-primary" />
+//                   {totalProducts > 0 && (
+//                     <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-4 h-4 flex items-center justify-center rounded-full font-bold">
+//                       {totalProducts}
+//                     </span>
+//                   )}
+//                 </button>
+
+//                 {!user?.id && (
+//                   <button
+//                     onClick={() => navigate("/login")}
+//                     className="p-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition"
+//                   >
+//                     <User className="w-5 h-5" />
+//                   </button>
+//                 )}
+//               </div>
+//             </div>
+
+//             <div className="mt-3">
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative w-full">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <Search className="w-4 h-4 text-text-muted" />
+//                   </div>
+//                   <input
+//                     type="text"
+//                     value={searchQuery}
+//                     onChange={(e) => setSearchQuery(e.target.value)}
+//                     placeholder="Search products..."
+//                     className="w-full h-10 pl-9 pr-4 rounded-lg bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm text-text placeholder:text-text-muted/60"
+//                   />
+//                 </div>
+//               </form>
+//             </div>
+
+//             <div className="mt-3 overflow-x-auto pb-2 hide-scrollbar">
+//               <div className="flex items-center gap-2 min-w-max">
+//                 <button className="px-3 py-1.5 rounded-full bg-gradient-primary text-white text-xs font-medium whitespace-nowrap">
+//                   🔥 Sale!
+//                 </button>
+//                 {allCategories.map((category) => (
+//                   <Link
+//                     key={category._id}
+//                     to={`/${validateUrlConverter(category.name)}-${category._id}/all-all`}
+//                     className="px-3 py-1.5 rounded-full bg-bg-alt text-text-muted text-xs font-medium whitespace-nowrap hover:bg-primary hover:text-white transition"
+//                   >
+//                     {category.name}
+//                   </Link>
+//                 ))}
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {mobileMenuOpen && (
+//           <>
+//             <div
+//               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+//               onClick={() => setMobileMenuOpen(false)}
+//             />
+//             <div className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-50 shadow-2xl animate-slide-in-left overflow-y-auto">
+//               <ShowMenu
+//                 user={user}
+//                 onClose={() => setMobileMenuOpen(false)}
+//                 isMobile={true}
+//                 wishlistCount={wishlistCount}
+//               />
+//             </div>
+//           </>
+//         )}
+
+//         {mobileSearchOpen && (
+//           <>
+//             <div
+//               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+//               onClick={() => setMobileSearchOpen(false)}
+//             />
+//             <div className="fixed top-0 left-0 right-0 bg-card z-50 p-4 shadow-lg animate-slide-in-down">
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative w-full">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <Search className="w-5 h-5 text-text-muted" />
+//                   </div>
+//                   <input
+//                     type="text"
+//                     value={searchQuery}
+//                     onChange={(e) => setSearchQuery(e.target.value)}
+//                     placeholder="What are you looking for?"
+//                     className="w-full h-12 pl-10 pr-16 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text"
+//                     autoFocus
+//                   />
+//                   <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+//                     <button type="submit" className="btn btn-primary px-3 py-1.5 text-sm whitespace-nowrap">
+//                       Go
+//                     </button>
+//                   </div>
+//                 </div>
+//               </form>
+//               <button
+//                 onClick={() => setMobileSearchOpen(false)}
+//                 className="absolute right-4 top-4 text-text-muted hover:text-text transition-colors"
+//               >
+//                 <X className="w-5 h-5" />
+//               </button>
+//             </div>
+//           </>
+//         )}
+
+//         {opencart && <DisplayCart close={() => setOpencart(false)} />}
+//       </header>
+
+//       <style jsx>{`
+//         @keyframes slide-in-left {
+//           from { transform: translateX(-100%); }
+//           to { transform: translateX(0); }
+//         }
+//         @keyframes slide-in-down {
+//           from { transform: translateY(-100%); }
+//           to { transform: translateY(0); }
+//         }
+//         .animate-slide-in-left {
+//           animation: slide-in-left 0.3s ease-out;
+//         }
+//         .animate-slide-in-down {
+//           animation: slide-in-down 0.3s ease-out;
+//         }
+//         .hide-scrollbar::-webkit-scrollbar {
+//           display: none;
+//         }
+//         .hide-scrollbar {
+//           -ms-overflow-style: none;
+//           scrollbar-width: none;
+//         }
+//       `}</style>
+//     </>
+//   );
+// };
+
+// export default Header;  
+
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
-  Search, User, ShoppingBag, Menu, Heart, ChevronDown, Tag, X,
+  Search, User, ShoppingBag, Menu, Heart, ChevronDown, X,
   ChevronLeft, ChevronRight
 } from "lucide-react";
 import useMobile from "../hooks/useMobile";
@@ -34,9 +461,7 @@ const Header = () => {
   const allCategories = useSelector((state) => state.product.allCategory);
 
   useEffect(() => {
-    if (!user?.id) {
-      setUserMenuOpen(false);
-    }
+    if (!user?.id) setUserMenuOpen(false);
   }, [user]);
 
   useEffect(() => {
@@ -93,11 +518,8 @@ const Header = () => {
 
   const isSearchPage = location.pathname === "/search";
 
-  if (isSearchPage) {
-    return null;
-  }
+  if (isSearchPage) return null;
 
-  // Logo component for consistent styling
   const Logo = () => (
     <h1 className="text-xl md:text-2xl font-extrabold">
       <span className="text-blue-600">Buy</span>
@@ -113,7 +535,7 @@ const Header = () => {
             <div className="flex items-center justify-between px-6 py-4 gap-4">
               <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
                 <div className="rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                  <img src={logo} alt="image" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
+                  <img src={logo} alt="logo" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
                 </div>
                 <div>
                   <Logo />
@@ -218,6 +640,7 @@ const Header = () => {
                   <button
                     onClick={() => scrollCategories('left')}
                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+                    aria-label="Scroll left"
                   >
                     <ChevronLeft size={18} />
                   </button>
@@ -243,6 +666,7 @@ const Header = () => {
                   <button
                     onClick={() => scrollCategories('right')}
                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+                    aria-label="Scroll right"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -256,12 +680,13 @@ const Header = () => {
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/5"
+                aria-label="Menu"
               >
                 <Menu className="w-6 h-6 text-text" />
               </button>
 
               <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-                <img src={logo} alt="image" className="w-8 h-8 object-contain" />
+                <img src={logo} alt="logo" className="w-8 h-8 object-contain" />
                 <Logo />
               </Link>
 
@@ -271,6 +696,7 @@ const Header = () => {
                 <button
                   onClick={() => navigate("/dashboard/wishlist")}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
+                  aria-label="Wishlist"
                 >
                   <Heart className="w-5 h-5 text-text-muted" />
                   {wishlistCount > 0 && (
@@ -283,6 +709,7 @@ const Header = () => {
                 <button
                   onClick={() => setOpencart(true)}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
+                  aria-label="Cart"
                 >
                   <ShoppingBag className="w-5 h-5 text-primary" />
                   {totalProducts > 0 && (
@@ -296,6 +723,7 @@ const Header = () => {
                   <button
                     onClick={() => navigate("/login")}
                     className="p-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition"
+                    aria-label="Login"
                   >
                     <User className="w-5 h-5" />
                   </button>
@@ -386,6 +814,7 @@ const Header = () => {
               <button
                 onClick={() => setMobileSearchOpen(false)}
                 className="absolute right-4 top-4 text-text-muted hover:text-text transition-colors"
+                aria-label="Close search"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -396,7 +825,7 @@ const Header = () => {
         {opencart && <DisplayCart close={() => setOpencart(false)} />}
       </header>
 
-      <style jsx>{`
+      <style >{`
         @keyframes slide-in-left {
           from { transform: translateX(-100%); }
           to { transform: translateX(0); }
@@ -423,4 +852,4 @@ const Header = () => {
   );
 };
 
-export default Header;  
+export default Header;

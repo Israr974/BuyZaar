@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   X,
   Upload,
@@ -18,7 +18,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  CheckCircle,
   ShoppingBag
 } from "lucide-react";
 import Axios from "../utils/Axios";
@@ -47,84 +46,124 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     publish: true,
   });
 
+  const abortControllerRef = useRef(null);
+  const isMounted = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Fetch product by ID
   useEffect(() => {
     const fetchProductById = async () => {
       if (!productId) return;
-      
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       try {
         setProductLoading(true);
         const response = await Axios({
           ...summaryApi().getProductById(),
-          data: { productId: productId } 
+          data: { productId: productId },
+          signal: abortControllerRef.current.signal,
         });
-        
-        if (response.data.success) {
+
+        if (!isMounted.current) return;
+
+        if (response.data?.success) {
           const productData = response.data.data;
           setProduct(productData);
-          
+
           setData({
             name: productData.name || "",
             image: productData.image || [],
             category: productData.category?._id || productData.category || "",
             subCategory: productData.sub_category?.[0]?._id || productData.sub_category?.[0] || "",
             unit: productData.unit || "",
-            stock: productData.stock || "",
-            price: productData.price || "",
-            discount: productData.discount || "",
+            stock: productData.stock?.toString() || "",
+            price: productData.price?.toString() || "",
+            discount: productData.discount?.toString() || "",
             description: productData.description || "",
             more_details: productData.more_details || "",
             publish: productData.publish ?? true,
           });
         } else {
-          toast.error(response.data.message || "Failed to load product details");
+          toast.error(response.data?.message || "Failed to load product details");
           onClose?.();
         }
       } catch (error) {
-        AxiosError(error);
-        toast.error("Error loading product");
-        onClose?.();
+        if (isMounted.current && error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          AxiosError(error);
+          toast.error("Error loading product");
+          onClose?.();
+        }
       } finally {
-        setProductLoading(false);
+        if (isMounted.current) {
+          setProductLoading(false);
+        }
       }
     };
 
     fetchProductById();
   }, [productId, onClose]);
 
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await Axios(summaryApi().getAllCategory);
-        setCategories(res.data.data || []);
+        if (isMounted.current && res.data?.success) {
+          setCategories(res.data.data || []);
+        }
       } catch (error) {
-        AxiosError(error);
-        toast.error("Failed to load categories");
+        if (isMounted.current) {
+          AxiosError(error);
+          toast.error("Failed to load categories");
+        }
       }
     };
     fetchCategories();
   }, []);
 
+  // Fetch subcategories when category changes
   useEffect(() => {
-    if (!data.category) return setSubCategories([]);
+    if (!data.category) {
+      setSubCategories([]);
+      return;
+    }
+
     const fetchSubCategories = async () => {
       try {
         const res = await Axios(summaryApi().getSubcategory);
-        const filtered =
-          res.data?.data?.filter((sub) =>
-            sub.category.some((c) => c._id === data.category)
+        if (isMounted.current && res.data?.success) {
+          const filtered = res.data.data?.filter((sub) =>
+            sub.category?.some((c) => c._id === data.category)
           ) || [];
-        setSubCategories(filtered);
+          setSubCategories(filtered);
+        }
       } catch (error) {
-        AxiosError(error);
+        if (isMounted.current) {
+          AxiosError(error);
+        }
       }
     };
     fetchSubCategories();
   }, [data.category]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {};
 
-    if (!data.name.trim()) {
+    if (!data.name?.trim()) {
       newErrors.name = "Product name is required";
     } else if (data.name.trim().length < 2) {
       newErrors.name = "Name must be at least 2 characters";
@@ -138,41 +177,51 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       newErrors.subCategory = "Please select a subcategory";
     }
 
-    if (!data.price || parseFloat(data.price) <= 0) {
-      newErrors.price = "Please enter a valid price";
+    const price = parseFloat(data.price);
+    if (!data.price || isNaN(price) || price <= 0) {
+      newErrors.price = "Please enter a valid price (greater than 0)";
     }
 
-    if (!data.stock || parseInt(data.stock) < 0) {
-      newErrors.stock = "Please enter valid stock quantity";
+    const stock = parseInt(data.stock);
+    if (!data.stock || isNaN(stock) || stock < 0) {
+      newErrors.stock = "Please enter valid stock quantity (0 or more)";
     }
 
-    if (data.discount && (parseFloat(data.discount) < 0 || parseFloat(data.discount) > 100)) {
-      newErrors.discount = "Discount must be between 0 and 100";
+    if (data.discount) {
+      const discount = parseFloat(data.discount);
+      if (isNaN(discount) || discount < 0 || discount > 100) {
+        newErrors.discount = "Discount must be between 0 and 100";
+      }
     }
 
-    if (data.image.length === 0) {
+    if (!data.image || data.image.length === 0) {
       newErrors.image = "Please upload at least one product image";
     }
 
     setErrors(newErrors);
-    
+
     if (Object.keys(newErrors).length > 0) {
       const firstError = Object.keys(newErrors)[0];
       const errorElement = document.getElementById(`error-${firstError}`);
-      errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return false;
     }
     return true;
-  };
+  }, [data]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: null }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
+    
     if (files.length + data.image.length > 10) {
       toast.error("Maximum 10 images allowed");
       return;
@@ -191,38 +240,55 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     });
 
     setData((prev) => ({ ...prev, image: [...prev.image, ...validFiles] }));
-    setErrors(prev => ({ ...prev, image: null }));
+    if (errors.image) {
+      setErrors(prev => ({ ...prev, image: null }));
+    }
   };
 
-  const removeImage = (index) => {
+  const removeImage = (indexToRemove) => {
     setData((prev) => ({
       ...prev,
-      image: prev.image.filter((_, i) => i !== index),
+      image: prev.image.filter((_, index) => index !== indexToRemove),
     }));
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    setLoading(true);
+    
     try {
-      setLoading(true);
       const uploadedUrls = [];
 
-      for (let file of data.image) {
+      // Upload new images
+      for (const file of data.image) {
         if (typeof file === "string") {
           uploadedUrls.push(file);
           continue;
         }
+        
         const formData = new FormData();
         formData.append("image", file);
+        
         const res = await Axios({
           ...summaryApi().uploadImage,
           data: formData,
           headers: { "Content-Type": "multipart/form-data" },
+          signal: abortControllerRef.current.signal,
         });
-        if (res.data?.imageUrl) uploadedUrls.push(res.data.imageUrl);
-        else {
-          toast.error("Failed to upload image");
+        
+        if (!isMounted.current) return;
+        
+        if (res.data?.imageUrl) {
+          uploadedUrls.push(res.data.imageUrl);
+        } else {
+          toast.error(`Failed to upload image: ${file.name}`);
+          setLoading(false);
           return;
         }
       }
@@ -230,12 +296,12 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       const payload = {
         id: productId,
         name: data.name.trim(),
-        unit: data.unit.trim(),
+        unit: data.unit?.trim() || "",
         stock: parseInt(data.stock),
         price: parseFloat(data.price),
         discount: data.discount ? parseFloat(data.discount) : 0,
-        description: data.description.trim(),
-        more_details: data.more_details.trim(),
+        description: data.description?.trim() || "",
+        more_details: data.more_details?.trim() || "",
         publish: data.publish,
         category: data.category,
         sub_category: [data.subCategory],
@@ -245,26 +311,32 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       const res = await Axios({
         ...summaryApi().updateProductDetails,
         data: payload,
+        signal: abortControllerRef.current.signal,
       });
 
-      if (res.data.success) {
+      if (!isMounted.current) return;
+
+      if (res.data?.success) {
         toast.success("Product updated successfully! 🎉");
-        
         if (onSuccess) {
           onSuccess();
         } else {
           onClose?.();
         }
       } else {
-        toast.error(res.data.message || "Failed to update product");
+        toast.error(res.data?.message || "Failed to update product");
       }
     } catch (error) {
-      AxiosError(error);
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
+      if (!isMounted.current) return;
+      
+      if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+        AxiosError(error);
+        toast.error(error.response?.data?.message || "Failed to update product");
       }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -288,7 +360,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
           </div>
           <h3 className="text-xl font-display font-bold text-text">Product Not Found</h3>
           <p className="text-text-muted">The product you're trying to edit doesn't exist.</p>
-          <button onClick={onClose} className="btn btn-primary px-6 py-2.5 rounded-xl mt-2">
+          <button onClick={onClose} className="btn-primary px-6 py-2.5 rounded-xl mt-2">
             Close
           </button>
         </div>
@@ -304,7 +376,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-primary" />
+                <ShoppingBag className="w-5 h-5 text-primary" aria-hidden="true" />
                 <h2 className="text-2xl font-display font-bold gradient-text">
                   Update Product
                 </h2>
@@ -317,6 +389,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
               className="p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text disabled:opacity-50"
+              aria-label="Close"
             >
               <X size={20} />
             </button>
@@ -331,7 +404,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               {/* Product Name */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <Package size={16} className="text-primary" />
+                  <Package size={16} className="text-primary" aria-hidden="true" />
                   Product Name <span className="text-error">*</span>
                 </label>
                 <input
@@ -342,10 +415,11 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   onChange={handleChange}
                   disabled={loading}
                   className={`input w-full ${errors.name ? 'border-error' : ''}`}
+                  aria-invalid={!!errors.name}
                 />
                 {errors.name && (
                   <p id="error-name" className="mt-1 text-xs text-error flex items-center gap-1">
-                    <AlertCircle size={12} />
+                    <AlertCircle size={12} aria-hidden="true" />
                     {errors.name}
                   </p>
                 )}
@@ -355,7 +429,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Layers size={16} className="text-primary" />
+                    <Layers size={16} className="text-primary" aria-hidden="true" />
                     Category <span className="text-error">*</span>
                   </label>
                   <select
@@ -374,7 +448,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   </select>
                   {errors.category && (
                     <p className="mt-1 text-xs text-error flex items-center gap-1">
-                      <AlertCircle size={12} />
+                      <AlertCircle size={12} aria-hidden="true" />
                       {errors.category}
                     </p>
                   )}
@@ -382,7 +456,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Tag size={16} className="text-primary" />
+                    <Tag size={16} className="text-primary" aria-hidden="true" />
                     Subcategory <span className="text-error">*</span>
                   </label>
                   <select
@@ -403,7 +477,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   </select>
                   {errors.subCategory && (
                     <p className="mt-1 text-xs text-error flex items-center gap-1">
-                      <AlertCircle size={12} />
+                      <AlertCircle size={12} aria-hidden="true" />
                       {errors.subCategory}
                     </p>
                   )}
@@ -414,8 +488,8 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <DollarSign size={16} className="text-primary" />
-                    Price <span className="text-error">*</span>
+                    <DollarSign size={16} className="text-primary" aria-hidden="true" />
+                    Price (₹) <span className="text-error">*</span>
                   </label>
                   <input
                     type="number"
@@ -435,8 +509,8 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Percent size={16} className="text-primary" />
-                    Discount %
+                    <Percent size={16} className="text-primary" aria-hidden="true" />
+                    Discount (%)
                   </label>
                   <input
                     type="number"
@@ -456,7 +530,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Hash size={16} className="text-primary" />
+                    <Hash size={16} className="text-primary" aria-hidden="true" />
                     Stock <span className="text-error">*</span>
                   </label>
                   <input
@@ -479,7 +553,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Package size={16} className="text-primary" />
+                    <Package size={16} className="text-primary" aria-hidden="true" />
                     Unit
                   </label>
                   <input
@@ -495,7 +569,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                 <div>
                   <label className="label flex items-center gap-2">
-                    <Globe size={16} className="text-primary" />
+                    <Globe size={16} className="text-primary" aria-hidden="true" />
                     Status
                   </label>
                   <select
@@ -505,18 +579,8 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     disabled={loading}
                     className="input w-full"
                   >
-                    <option value="true">
-                      <div className="flex items-center gap-2">
-                        <Eye size={14} />
-                        Published
-                      </div>
-                    </option>
-                    <option value="false">
-                      <div className="flex items-center gap-2">
-                        <EyeOff size={14} />
-                        Unpublished
-                      </div>
-                    </option>
+                    <option value="true">✓ Published (Visible to customers)</option>
+                    <option value="false">✗ Unpublished (Hidden from store)</option>
                   </select>
                 </div>
               </div>
@@ -528,7 +592,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               <div>
                 <label className="label flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ImageIcon size={16} className="text-primary" />
+                    <ImageIcon size={16} className="text-primary" aria-hidden="true" />
                     Product Images <span className="text-error">*</span>
                   </div>
                   <span className="text-xs text-text-muted">
@@ -551,7 +615,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     className="flex items-center justify-center gap-3 border-2 border-dashed border-border hover:border-primary transition-colors rounded-xl p-5 cursor-pointer hover:bg-primary/5"
                   >
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Upload className="text-primary" size={20} />
+                      <Upload className="text-primary" size={20} aria-hidden="true" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-text">Click to upload images</p>
@@ -576,8 +640,9 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                             onClick={() => removeImage(index)}
                             disabled={loading}
                             className="absolute -top-2 -right-2 h-6 w-6 bg-error text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                            aria-label="Remove image"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={12} aria-hidden="true" />
                           </button>
                           {typeof file === "string" && (
                             <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
@@ -591,7 +656,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
 
                   {errors.image && (
                     <p className="text-xs text-error flex items-center gap-1">
-                      <AlertCircle size={12} />
+                      <AlertCircle size={12} aria-hidden="true" />
                       {errors.image}
                     </p>
                   )}
@@ -601,7 +666,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               {/* Description */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <FileText size={16} className="text-primary" />
+                  <FileText size={16} className="text-primary" aria-hidden="true" />
                   Description
                 </label>
                 <textarea
@@ -614,14 +679,14 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   className="input w-full resize-none"
                 />
                 <p className="text-xs text-text-muted mt-1">
-                  {data.description.length}/500 characters
+                  {data.description?.length || 0}/500 characters
                 </p>
               </div>
 
               {/* More Details */}
               <div>
                 <label className="label flex items-center gap-2">
-                  <FileText size={16} className="text-primary" />
+                  <FileText size={16} className="text-primary" aria-hidden="true" />
                   More Details (Optional)
                 </label>
                 <textarea
@@ -647,14 +712,14 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
             <button
               onClick={onClose}
               disabled={loading}
-              className="btn btn-outline px-6 py-2.5 rounded-xl"
+              className="btn-outline px-6 py-2.5 rounded-xl"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="btn btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[140px] justify-center"
+              className="btn-primary px-6 py-2.5 rounded-xl flex items-center gap-2 min-w-[140px] justify-center"
             >
               {loading ? (
                 <>
