@@ -68,7 +68,6 @@ const TermsAndConditions = () => {
     }
   ];
 
-  // Back to top button visibility
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 300);
@@ -97,7 +96,6 @@ const TermsAndConditions = () => {
   return (
     <div className="min-h-screen bg-bg fade-in">
       <div className="container-narrow px-4 py-8 md:py-12">
-        {/* Header */}
         <div className="text-center mb-10 md:mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 mb-4 animate-float">
             <FileText className="w-10 h-10 text-primary" aria-hidden="true" />
@@ -113,7 +111,6 @@ const TermsAndConditions = () => {
           </div>
         </div>
 
-        {/* Quick Navigation */}
         <div className="bg-card rounded-xl border border-border p-5 md:p-6 mb-8 sticky top-20 z-10 bg-card/95 backdrop-blur-sm">
           <h2 className="font-semibold text-text mb-4 flex items-center gap-2">
             <Shield size={18} className="text-primary" aria-hidden="true" />
@@ -132,7 +129,6 @@ const TermsAndConditions = () => {
           </div>
         </div>
 
-        {/* Terms Content */}
         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
           <div className="divide-y divide-border">
             {sections.map((section) => {
@@ -164,7 +160,6 @@ const TermsAndConditions = () => {
           </div>
         </div>
 
-        {/* Contact Section */}
         <div className="mt-8 text-center">
           <div className="bg-bg-alt rounded-xl p-6">
             <p className="text-text-muted mb-4">
@@ -188,7 +183,6 @@ const TermsAndConditions = () => {
           </div>
         </div>
 
-        {/* Footer Note */}
         <div className="mt-6 text-center">
           <p className="text-[11px] text-text-muted">
             By continuing to use BuyZaar, you acknowledge that you have read and agree to these Terms and Conditions.
@@ -196,7 +190,6 @@ const TermsAndConditions = () => {
         </div>
       </div>
 
-      {/* Back to Top Button */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}

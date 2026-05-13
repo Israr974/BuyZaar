@@ -1,6 +1,4 @@
 import { configureStore } from "@reduxjs/toolkit";
-
-// Import all reducers
 import userReducer from "./userSlice";
 import productReducer from "./productSlice";
 import cartReducer from "./cartSlice";
@@ -8,11 +6,9 @@ import orderReducer from "./orderSlice";
 import wishlistReducer from "./wishlistSlice";
 import uiReducer from "./uiSlice";
 
-// ================= CONSTANTS =================
 const PERSIST_KEYS = ["cart", "wishlist", "ui"];
 const STORAGE_KEY = "redux_store";
 
-// ================= PERSISTENCE HELPERS =================
 const loadState = () => {
   if (typeof window === "undefined") return undefined;
   
@@ -22,7 +18,7 @@ const loadState = () => {
     
     const savedState = JSON.parse(serializedState);
     
-    // Only restore specific slices
+
     const restoredState = {};
     PERSIST_KEYS.forEach(key => {
       if (savedState[key]) {
@@ -55,11 +51,10 @@ const saveState = (state) => {
   }
 };
 
-// ================= MIDDLEWARE =================
 const persistenceMiddleware = (store) => (next) => (action) => {
   const result = next(action);
   
-  // Save to localStorage after specific actions
+
   const actionsToPersist = [
     "cart/addToCart",
     "cart/removeFromCart",
@@ -86,12 +81,8 @@ const persistenceMiddleware = (store) => (next) => (action) => {
 
 const loggerMiddleware = (store) => (next) => (action) => {
   if (process.env.NODE_ENV === "development") {
-    console.group(`🎯 Action: ${action.type}`);
-    console.log("Payload:", action.payload);
-    console.log("Prev State:", store.getState());
+    
     const result = next(action);
-    console.log("Next State:", store.getState());
-    console.groupEnd();
     return result;
   }
   return next(action);
@@ -101,9 +92,9 @@ const errorMiddleware = (store) => (next) => (action) => {
   try {
     return next(action);
   } catch (error) {
-    console.error(`❌ Error in action ${action.type}:`, error);
+    console.error(`Error in action ${action.type}:`, error);
     
-    // Dispatch error action if available
+
     if (action.type?.startsWith("cart/")) {
       store.dispatch({ type: "cart/setCartError", payload: error.message });
     } else if (action.type?.startsWith("product/")) {
@@ -114,7 +105,6 @@ const errorMiddleware = (store) => (next) => (action) => {
   }
 };
 
-// ================= STORE CONFIGURATION =================
 const preloadedState = loadState();
 
 const store = configureStore({
@@ -157,20 +147,16 @@ const store = configureStore({
   devTools: process.env.NODE_ENV !== "production",
 });
 
-// ================= SUBSCRIBE TO STORE CHANGES =================
 store.subscribe(() => {
-  // Optional: Add analytics or logging on specific state changes
   const state = store.getState();
   
-  // Log cart changes in development
   if (process.env.NODE_ENV === "development") {
     if (state.cart?.totalQuantity > 0) {
-      console.log(`🛒 Cart has ${state.cart.totalQuantity} items totaling ₹${state.cart.totalPrice}`);
+      console.log(` Cart has ${state.cart.totalQuantity} items totaling ₹${state.cart.totalPrice}`);
     }
   }
 });
 
-// ================= HELPER FUNCTIONS =================
 export const getStoreState = () => store.getState();
 export const getCurrentUser = () => store.getState().user;
 export const getCartItems = () => store.getState().cart.cartitems;
@@ -178,9 +164,8 @@ export const getCartTotal = () => store.getState().cart.totalPrice;
 export const getWishlistItems = () => store.getState().wishlist.items || [];
 export const getIsAuthenticated = () => !!store.getState().user?.id;
 
-// ================= RESET STORE FUNCTION =================
 export const resetStore = () => {
-  // Reset each slice to its initial state
+
   store.dispatch({ type: "user/resetUserState" });
   store.dispatch({ type: "product/resetProductState" });
   store.dispatch({ type: "cart/clearCart" });
@@ -188,7 +173,7 @@ export const resetStore = () => {
   store.dispatch({ type: "wishlist/clearWishlist" });
   store.dispatch({ type: "ui/resetUI" });
   
-  // Clear localStorage
+ 
   if (typeof window !== "undefined") {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("token");
@@ -196,13 +181,11 @@ export const resetStore = () => {
   }
 };
 
-// ================= PERSISTENCE SETUP =================
-// Save store on window/beforeunload events for critical data
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
     saveState(store.getState());
   });
 }
 
-// ================= EXPORT =================
+
 export default store;

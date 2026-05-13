@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// ================= CONSTANTS =================
 const STORAGE_KEYS = {
   USER: "user",
   TOKEN: "token",
@@ -32,7 +31,6 @@ const DEFAULT_PREFERENCES = {
   twoFactorEnabled: false,
 };
 
-// ================= HELPER FUNCTIONS =================
 const loadUserFromStorage = () => {
   if (typeof window === "undefined") return null;
   
@@ -40,7 +38,6 @@ const loadUserFromStorage = () => {
     const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
     if (savedUser) {
       const user = JSON.parse(savedUser);
-      // Don't restore sensitive data from storage
       delete user.token;
       delete user.refreshToken;
       return user;
@@ -56,7 +53,6 @@ const saveUserToStorage = (user) => {
   
   try {
     const userToSave = { ...user };
-    // Don't store sensitive data
     delete userToSave.token;
     delete userToSave.refreshToken;
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userToSave));
@@ -93,7 +89,6 @@ const calculateUserStats = (user) => {
   };
 };
 
-// ================= INITIAL STATE =================
 const getInitialState = () => {
   const savedUser = loadUserFromStorage();
   
@@ -105,7 +100,6 @@ const getInitialState = () => {
   }
   
   return {
-    // Basic Info
     id: "",
     name: "",
     email: "",
@@ -115,38 +109,30 @@ const getInitialState = () => {
     role: USER_ROLES.USER,
     status: USER_STATUS.PENDING,
     
-    // Addresses
     address_details: [],
     defaultAddress: null,
     
-    // Orders
     orderHistory: [],
     currentOrder: null,
     
-    // Cart & Wishlist
     shopping_cart: [],
     wishlist: [],
     
-    // Timestamps
     createdAt: null,
     updatedAt: null,
     lastLogin: null,
     lastActivity: null,
     
-    // Verification
     isVerified: false,
     isEmailVerified: false,
     isMobileVerified: false,
     isLoggedIn: false,
     
-    // Preferences
     preferences: { ...DEFAULT_PREFERENCES },
     
-    // Security
     twoFactorEnabled: false,
     lastPasswordChange: null,
     
-    // Stats
     stats: {
       totalOrders: 0,
       totalSpent: 0,
@@ -156,7 +142,7 @@ const getInitialState = () => {
       lastOrderDate: null,
     },
     
-    // Session
+
     sessionId: null,
     tokenExpiry: null,
   };
@@ -164,44 +150,43 @@ const getInitialState = () => {
 
 const initialState = getInitialState();
 
-// ================= SLICE =================
 const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    // ================= SET USER =================
+    
     setUser: (state, action) => {
       const user = action.payload;
       
       if (user && Object.keys(user).length > 0 && user.id) {
-        // Update all user fields
+      
         Object.assign(state, user);
         state.isLoggedIn = true;
         state.lastActivity = new Date().toISOString();
         
-        // Calculate stats
+      
         state.stats = calculateUserStats(state);
         
-        // Save to localStorage
+       
         saveUserToStorage(state);
       } else {
-        // Clear user state
+       
         Object.assign(state, getInitialState());
         state.isLoggedIn = false;
         clearUserStorage();
       }
     },
     
-    // ================= UPDATE USER =================
+   
     updateUser: (state, action) => {
       const updates = action.payload;
       
-      // Update fields
+    
       Object.assign(state, updates);
       state.isLoggedIn = true;
       state.updatedAt = new Date().toISOString();
       
-      // Recalculate stats if related fields changed
+    
       if (updates.orderHistory || updates.address_details || updates.wishlist) {
         state.stats = calculateUserStats(state);
       }
@@ -209,22 +194,20 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= LOGOUT =================
+  
     logout: (state) => {
-      // Clear all user data
       Object.assign(state, getInitialState());
       state.isLoggedIn = false;
       
-      // Clear storage
+     
       clearUserStorage();
       
-      // Clear any other session data
+ 
       if (typeof window !== "undefined") {
         sessionStorage.clear();
       }
     },
     
-    // ================= PROFILE UPDATES =================
     updateProfile: (state, action) => {
       const { name, email, mobile, alternativeMobile, avatar } = action.payload;
       
@@ -244,7 +227,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= ADDRESS MANAGEMENT =================
     addAddress: (state, action) => {
       const address = action.payload;
       const newAddress = {
@@ -256,7 +238,7 @@ const userSlice = createSlice({
       state.address_details.push(newAddress);
       state.stats.savedAddresses = state.address_details.length;
       
-      // Set as default if it's the first address
+  
       if (!state.defaultAddress && state.address_details.length === 1) {
         state.defaultAddress = newAddress._id;
       }
@@ -284,7 +266,6 @@ const userSlice = createSlice({
       state.address_details = state.address_details.filter(addr => addr._id !== addressId);
       state.stats.savedAddresses = state.address_details.length;
       
-      // Clear default address if it was removed
       if (state.defaultAddress === addressId) {
         state.defaultAddress = state.address_details[0]?._id || null;
       }
@@ -303,7 +284,6 @@ const userSlice = createSlice({
       }
     },
     
-    // ================= WISHLIST MANAGEMENT =================
     addToWishlist: (state, action) => {
       const product = action.payload;
       
@@ -335,7 +315,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= ORDER MANAGEMENT =================
     addOrder: (state, action) => {
       const order = action.payload;
       const newOrder = {
@@ -358,7 +337,6 @@ const userSlice = createSlice({
         if (trackingNumber) order.trackingNumber = trackingNumber;
         if (deliveryDate) order.deliveryDate = deliveryDate;
         
-        // Recalculate stats if order status affects totals
         if (status === "delivered" && !order.wasCounted) {
           order.wasCounted = true;
           state.stats = calculateUserStats(state);
@@ -376,7 +354,6 @@ const userSlice = createSlice({
       state.currentOrder = null;
     },
     
-    // ================= PREFERENCES =================
     updatePreferences: (state, action) => {
       state.preferences = { ...state.preferences, ...action.payload };
       saveUserToStorage(state);
@@ -390,7 +367,6 @@ const userSlice = createSlice({
       }
     },
     
-    // ================= VERIFICATION =================
     verifyEmail: (state) => {
       state.isEmailVerified = true;
       state.isVerified = state.isEmailVerified && state.isMobileVerified;
@@ -405,7 +381,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= SESSION MANAGEMENT =================
     setLastLogin: (state) => {
       state.lastLogin = new Date().toISOString();
       state.lastActivity = state.lastLogin;
@@ -429,7 +404,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= SECURITY =================
     enableTwoFactor: (state) => {
       state.twoFactorEnabled = true;
       saveUserToStorage(state);
@@ -445,7 +419,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= ROLE & STATUS =================
     updateUserRole: (state, action) => {
       const { role, updatedBy } = action.payload;
       state.role = role;
@@ -459,7 +432,6 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= BULK OPERATIONS =================
     syncUserData: (state, action) => {
       const { orders, wishlist, addresses, preferences } = action.payload;
       
@@ -473,70 +445,66 @@ const userSlice = createSlice({
       saveUserToStorage(state);
     },
     
-    // ================= RESET =================
     resetUserState: () => getInitialState(),
   },
 });
 
-// ================= EXPORT ACTIONS =================
 export const {
-  // User
+  
   setUser,
   updateUser,
   logout,
   
-  // Profile
+
   updateProfile,
   updateAvatar,
   
-  // Addresses
+  
   addAddress,
   updateAddress,
   removeAddress,
   setDefaultAddress,
   
-  // Wishlist
+
   addToWishlist,
   removeFromWishlist,
   clearWishlist,
-  
-  // Orders
+
   addOrder,
   updateOrderStatus,
   setCurrentOrder,
   clearCurrentOrder,
   
-  // Preferences
+
   updatePreferences,
   toggleNotification,
   
-  // Verification
+
   verifyEmail,
   verifyMobile,
-  
-  // Session
+ 
   setLastLogin,
   updateLastActivity,
   setSession,
   clearSession,
   
-  // Security
+
   enableTwoFactor,
   disableTwoFactor,
   updatePasswordTimestamp,
   
-  // Role & Status
+ 
   updateUserRole,
   updateUserStatus,
   
-  // Bulk
+
   syncUserData,
   
-  // Reset
+
   resetUserState,
 } = userSlice.actions;
 
-// ================= SELECTORS =================
+
 export const selectUser = (state) => state.user || {};
 export const selectUserId = (state) => state.user?.id || "";
 export const selectUserName = (state) => state.user?.name || "";
@@ -550,7 +518,6 @@ export const selectIsVerified = (state) => state.user?.isVerified || false;
 export const selectIsEmailVerified = (state) => state.user?.isEmailVerified || false;
 export const selectIsMobileVerified = (state) => state.user?.isMobileVerified || false;
 
-// Address selectors
 export const selectAddresses = (state) => state.user?.address_details || [];
 export const selectDefaultAddress = (state) => {
   const addresses = selectAddresses(state);
@@ -558,7 +525,7 @@ export const selectDefaultAddress = (state) => {
   return addresses.find(addr => addr._id === defaultId) || addresses[0] || null;
 };
 
-// Wishlist selectors
+
 export const selectWishlist = (state) => state.user?.wishlist || [];
 export const selectWishlistCount = (state) => state.user?.stats?.wishlistCount || 0;
 export const selectIsInWishlist = (productId) => (state) => {
@@ -566,32 +533,31 @@ export const selectIsInWishlist = (productId) => (state) => {
   return wishlist.some(item => item.productId === productId || item._id === productId);
 };
 
-// Order selectors
+
 export const selectOrderHistory = (state) => state.user?.orderHistory || [];
 export const selectOrderCount = (state) => state.user?.stats?.totalOrders || 0;
 export const selectTotalSpent = (state) => state.user?.stats?.totalSpent || 0;
 export const selectAverageOrderValue = (state) => state.user?.stats?.averageOrderValue || 0;
 
-// Preference selectors
+
 export const selectPreferences = (state) => state.user?.preferences || DEFAULT_PREFERENCES;
 export const selectNotificationPreference = (state) => state.user?.preferences?.notifications ?? true;
 export const selectEmailUpdatesPreference = (state) => state.user?.preferences?.emailUpdates ?? true;
 export const selectUserLanguage = (state) => state.user?.preferences?.language || "en";
 export const selectUserCurrency = (state) => state.user?.preferences?.currency || "INR";
 
-// Stats selectors
+
 export const selectUserStats = (state) => state.user?.stats || {};
 export const selectSavedAddressesCount = (state) => state.user?.stats?.savedAddresses || 0;
 
-// Session selectors
+
 export const selectLastLogin = (state) => state.user?.lastLogin || null;
 export const selectLastActivity = (state) => state.user?.lastActivity || null;
 export const selectUserStatus = (state) => state.user?.status || USER_STATUS.PENDING;
 
-// Security selectors
+
 export const selectTwoFactorEnabled = (state) => state.user?.twoFactorEnabled || false;
 
-// ================= HELPER SELECTORS =================
 export const selectHasAddresses = (state) => (state.user?.address_details?.length || 0) > 0;
 export const selectHasOrders = (state) => (state.user?.orderHistory?.length || 0) > 0;
 export const selectHasWishlist = (state) => (state.user?.wishlist?.length || 0) > 0;
@@ -612,8 +578,7 @@ export const selectUserInitials = (state) => {
     .slice(0, 2);
 };
 
-// ================= EXPORT CONSTANTS =================
+
 export { USER_ROLES, USER_STATUS, DEFAULT_PREFERENCES, STORAGE_KEYS };
 
-// ================= DEFAULT EXPORT =================
 export default userSlice.reducer;

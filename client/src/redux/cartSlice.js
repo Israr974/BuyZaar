@@ -1,10 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { AxiosError } from "axios";
 
-// ================= CONSTANTS =================
 const MAX_QUANTITY_PER_ITEM = 10;
 const STORAGE_KEY = "cart";
 
-// ================= HELPER FUNCTIONS =================
 const calculateTotals = (cartitems) => {
   const totalQuantity = cartitems.reduce(
     (total, item) => total + (item.quantity || 0), 
@@ -36,14 +35,13 @@ const loadFromLocalStorage = () => {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error("Failed to parse cart from localStorage", e);
+        AxiosError(e)
       }
     }
   }
   return null;
 };
 
-// ================= INITIAL STATE =================
 const getInitialState = () => {
   const savedState = loadFromLocalStorage();
   if (savedState) {
@@ -67,12 +65,10 @@ const getInitialState = () => {
 
 const initialState = getInitialState();
 
-// ================= SLICE =================
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    // ================= SET CART =================
     setCartItems: (state, action) => {
       state.cartitems = [...action.payload];
       const { totalQuantity, totalPrice } = calculateTotals(state.cartitems);
@@ -81,8 +77,7 @@ const cartSlice = createSlice({
       state.error = null;
       saveToLocalStorage(state);
     },
-    
-    // ================= ADD TO CART =================
+ 
     addToCart: (state, action) => {
       const { productId, quantity = 1 } = action.payload;
       
@@ -129,8 +124,7 @@ const cartSlice = createSlice({
       state.error = null;
       saveToLocalStorage(state);
     },
-    
-    // ================= REMOVE FROM CART =================
+
     removeFromCart: (state, action) => {
       const productId = action.payload;
       state.cartitems = state.cartitems.filter(
@@ -142,8 +136,7 @@ const cartSlice = createSlice({
       state.totalPrice = totalPrice;
       saveToLocalStorage(state);
     },
-    
-    // ================= UPDATE QUANTITY =================
+
     updateQuantity: (state, action) => {
       const { productId, quantity } = action.payload;
       
@@ -184,8 +177,7 @@ const cartSlice = createSlice({
       state.error = null;
       saveToLocalStorage(state);
     },
-    
-    // ================= INCREMENT QUANTITY =================
+  
     incrementQuantity: (state, action) => {
       const productId = action.payload;
       const item = state.cartitems.find(
@@ -218,8 +210,7 @@ const cartSlice = createSlice({
       state.error = null;
       saveToLocalStorage(state);
     },
-    
-    // ================= DECREMENT QUANTITY =================
+
     decrementQuantity: (state, action) => {
       const productId = action.payload;
       const itemIndex = state.cartitems.findIndex(
@@ -246,8 +237,6 @@ const cartSlice = createSlice({
       state.error = null;
       saveToLocalStorage(state);
     },
-    
-    // ================= CLEAR CART =================
     clearCart: (state) => {
       state.cartitems = [];
       state.totalQuantity = 0;
@@ -255,8 +244,6 @@ const cartSlice = createSlice({
       state.error = null;
       localStorage.removeItem(STORAGE_KEY);
     },
-    
-    // ================= LOADING STATES =================
     setCartLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -265,12 +252,10 @@ const cartSlice = createSlice({
       state.error = action.payload;
     },
     
-    // ================= CLEAR ERROR =================
     clearCartError: (state) => {
       state.error = null;
     },
     
-    // ================= SYNC WITH BACKEND =================
     syncCart: (state, action) => {
       const backendCart = action.payload;
       if (Array.isArray(backendCart) && backendCart.length > 0) {
@@ -284,7 +269,6 @@ const cartSlice = createSlice({
   },
 });
 
-// ================= EXPORT ACTIONS =================
 export const { 
   setCartItems, 
   addToCart, 
@@ -299,7 +283,6 @@ export const {
   syncCart
 } = cartSlice.actions;
 
-// ================= SELECTORS =================
 export const selectCartItems = (state) => state.cart?.cartitems || [];
 export const selectTotalQuantity = (state) => state.cart?.totalQuantity || 0;
 export const selectTotalPrice = (state) => state.cart?.totalPrice || 0;
@@ -307,7 +290,6 @@ export const selectCartLoading = (state) => state.cart?.loading || false;
 export const selectCartError = (state) => state.cart?.error || null;
 export const selectCartItemCount = (state) => state.cart?.cartitems?.length || 0;
 
-// ================= HELPER SELECTORS =================
 export const selectIsInCart = (productId) => (state) => {
   return state.cart?.cartitems?.some(item => item.productId?._id === productId) || false;
 };
@@ -317,5 +299,4 @@ export const selectCartItemQuantity = (productId) => (state) => {
   return item?.quantity || 0;
 };
 
-// ================= DEFAULT EXPORT =================
 export default cartSlice.reducer;

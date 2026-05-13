@@ -7,7 +7,7 @@ const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 5 * 1024 * 1024, 
   },
   fileFilter: (req, file, cb) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
@@ -18,6 +18,5 @@ export const upload = multer({
   },
 });
 
-// Optional: Add specific upload configurations for different use cases
 export const uploadSingle = upload.single('image');
 export const uploadMultiple = upload.array('images', 10);

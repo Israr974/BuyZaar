@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// ================= CONSTANTS =================
 const THEMES = {
   LIGHT: "light",
   DARK: "dark",
@@ -27,7 +26,6 @@ const NOTIFICATION_TYPES = {
 const TOAST_DURATION = 3000;
 const NOTIFICATION_DURATION = 5000;
 
-// ================= HELPER FUNCTIONS =================
 const getInitialTheme = () => {
   if (typeof window === "undefined") return THEMES.LIGHT;
   
@@ -61,12 +59,10 @@ const getInitialDeviceType = () => {
   return DEVICE_TYPES.DESKTOP;
 };
 
-// ================= INITIAL STATE =================
 const getInitialState = () => ({
-  // Theme
+ 
   theme: getInitialTheme(),
   
-  // Modals
   modal: {
     isOpen: false,
     type: null,
@@ -74,29 +70,24 @@ const getInitialState = () => ({
     options: {},
   },
   
-  // Loading states
   loading: {
     global: false,
     page: false,
     actions: new Set(),
   },
-  
-  // Sidebars
+
   sidebar: {
     isOpen: false,
     type: null,
   },
   mobileMenuOpen: false,
   cartSidebarOpen: false,
-  
-  // Search
+
   searchModalOpen: false,
   searchQuery: "",
   
-  // Notifications
   notifications: [],
   
-  // Toast
   toast: {
     message: null,
     type: NOTIFICATION_TYPES.SUCCESS,
@@ -104,7 +95,6 @@ const getInitialState = () => ({
     duration: TOAST_DURATION,
   },
   
-  // UI States
   overlay: false,
   activeTab: null,
   scrollPosition: 0,
@@ -118,25 +108,21 @@ const getInitialState = () => ({
     rate: 1,
   },
   
-  // Performance
   imageLoadErrors: new Set(),
   lazyLoadEnabled: true,
   reducedMotion: typeof window !== "undefined" 
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches 
     : false,
   
-  // Keyboard shortcuts
   keyboardShortcutsEnabled: true,
 });
 
 const initialState = getInitialState();
 
-// ================= SLICE =================
 const uiSlice = createSlice({
   name: "ui",
   initialState,
   reducers: {
-    // ================= THEME =================
     setTheme: (state, action) => {
       const newTheme = action.payload;
       state.theme = newTheme;
@@ -154,8 +140,7 @@ const uiSlice = createSlice({
       }
       applyThemeToDocument(newTheme);
     },
-    
-    // ================= MODAL =================
+   
     openModal: (state, action) => {
       const { type, data = null, options = {} } = action.payload;
       state.modal = {
@@ -183,7 +168,6 @@ const uiSlice = createSlice({
       }
     },
     
-    // ================= LOADING =================
     setGlobalLoading: (state, action) => {
       state.loading.global = action.payload;
     },
@@ -204,7 +188,6 @@ const uiSlice = createSlice({
       return state.loading.actions.has(action.payload);
     },
     
-    // ================= SIDEBAR =================
     openSidebar: (state, action) => {
       state.sidebar = {
         isOpen: true,
@@ -232,7 +215,6 @@ const uiSlice = createSlice({
       }
     },
     
-    // ================= MOBILE MENU =================
     openMobileMenu: (state) => {
       state.mobileMenuOpen = true;
       setBodyOverflow(true);
@@ -248,7 +230,6 @@ const uiSlice = createSlice({
       setBodyOverflow(state.mobileMenuOpen);
     },
     
-    // ================= CART SIDEBAR =================
     openCartSidebar: (state) => {
       state.cartSidebarOpen = true;
       setBodyOverflow(true);
@@ -264,7 +245,6 @@ const uiSlice = createSlice({
       setBodyOverflow(state.cartSidebarOpen);
     },
     
-    // ================= SEARCH =================
     openSearchModal: (state) => {
       state.searchModalOpen = true;
       setBodyOverflow(true);
@@ -292,7 +272,6 @@ const uiSlice = createSlice({
       state.searchQuery = "";
     },
     
-    // ================= NOTIFICATIONS =================
     addNotification: (state, action) => {
       const { type = NOTIFICATION_TYPES.INFO, title, message, duration = NOTIFICATION_DURATION } = action.payload;
       const id = Date.now() + Math.random();
@@ -308,7 +287,6 @@ const uiSlice = createSlice({
       
       state.notifications.unshift(notification);
       
-      // Auto-remove after duration
       setTimeout(() => {
         const index = state.notifications.findIndex(n => n.id === id);
         if (index !== -1) {
@@ -338,7 +316,6 @@ const uiSlice = createSlice({
       });
     },
     
-    // ================= TOAST =================
     showToast: (state, action) => {
       const { message, type = NOTIFICATION_TYPES.SUCCESS, duration = TOAST_DURATION } = action.payload;
       state.toast = {
@@ -348,7 +325,6 @@ const uiSlice = createSlice({
         duration,
       };
       
-      // Auto-hide after duration
       setTimeout(() => {
         if (state.toast.visible) {
           state.toast.visible = false;
@@ -360,7 +336,6 @@ const uiSlice = createSlice({
       state.toast.visible = false;
     },
     
-    // ================= OVERLAY =================
     showOverlay: (state) => {
       state.overlay = true;
       setBodyOverflow(true);
@@ -376,12 +351,10 @@ const uiSlice = createSlice({
       setBodyOverflow(state.overlay);
     },
     
-    // ================= ACTIVE TAB =================
     setActiveTab: (state, action) => {
       state.activeTab = action.payload;
     },
     
-    // ================= SCROLL POSITION =================
     setScrollPosition: (state, action) => {
       state.scrollPosition = action.payload;
     },
@@ -398,12 +371,10 @@ const uiSlice = createSlice({
       return state.scrollPositions?.[action.payload] || 0;
     },
     
-    // ================= NETWORK STATUS =================
     setOnlineStatus: (state, action) => {
       state.isOnline = action.payload;
     },
     
-    // ================= DEVICE TYPE =================
     setDeviceType: (state, action) => {
       state.deviceType = action.payload;
     },
@@ -412,7 +383,6 @@ const uiSlice = createSlice({
       state.deviceType = getInitialDeviceType();
     },
     
-    // ================= VIEW MODE =================
     setViewMode: (state, action) => {
       state.viewMode = action.payload;
       if (typeof localStorage !== "undefined") {
@@ -427,7 +397,6 @@ const uiSlice = createSlice({
       }
     },
     
-    // ================= LANGUAGE =================
     setLanguage: (state, action) => {
       state.language = action.payload;
       if (typeof localStorage !== "undefined") {
@@ -435,7 +404,6 @@ const uiSlice = createSlice({
       }
     },
     
-    // ================= CURRENCY =================
     setCurrency: (state, action) => {
       const { code, symbol, rate = 1 } = action.payload;
       state.currency = { code, symbol, rate };
@@ -444,7 +412,6 @@ const uiSlice = createSlice({
       }
     },
     
-    // ================= IMAGE LOAD ERRORS =================
     addImageLoadError: (state, action) => {
       state.imageLoadErrors.add(action.payload);
     },
@@ -457,17 +424,14 @@ const uiSlice = createSlice({
       state.imageLoadErrors.clear();
     },
     
-    // ================= LAZY LOADING =================
     setLazyLoadEnabled: (state, action) => {
       state.lazyLoadEnabled = action.payload;
     },
     
-    // ================= REDUCED MOTION =================
     setReducedMotion: (state, action) => {
       state.reducedMotion = action.payload;
     },
     
-    // ================= KEYBOARD SHORTCUTS =================
     setKeyboardShortcutsEnabled: (state, action) => {
       state.keyboardShortcutsEnabled = action.payload;
     },
@@ -476,10 +440,8 @@ const uiSlice = createSlice({
       state.keyboardShortcutsEnabled = !state.keyboardShortcutsEnabled;
     },
     
-    // ================= RESET =================
     resetUI: () => initialState,
     
-    // ================= BULK ACTIONS =================
     closeAllModalsAndSidebars: (state) => {
       state.modal.isOpen = false;
       state.sidebar.isOpen = false;
@@ -492,108 +454,92 @@ const uiSlice = createSlice({
   },
 });
 
-// ================= EXPORT ACTIONS =================
 export const {
-  // Theme
+ 
   setTheme,
   toggleTheme,
   
-  // Modal
+
   openModal,
   closeModal,
   setModalData,
   
-  // Loading
   setGlobalLoading,
   setPageLoading,
   startActionLoading,
   stopActionLoading,
   
-  // Sidebar
+  
   openSidebar,
   closeSidebar,
   toggleSidebar,
   
-  // Mobile Menu
   openMobileMenu,
   closeMobileMenu,
   toggleMobileMenu,
   
-  // Cart Sidebar
   openCartSidebar,
   closeCartSidebar,
   toggleCartSidebar,
-  
-  // Search
+ 
   openSearchModal,
   closeSearchModal,
   toggleSearchModal,
   setSearchQuery,
   clearSearchQuery,
   
-  // Notifications
   addNotification,
   removeNotification,
   clearNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   
-  // Toast
+
   showToast,
   hideToast,
-  
-  // Overlay
+ 
   showOverlay,
   hideOverlay,
   toggleOverlay,
   
-  // Active Tab
+
   setActiveTab,
   
-  // Scroll Position
   setScrollPosition,
   saveScrollPosition,
   
-  // Network Status
+  
   setOnlineStatus,
   
-  // Device Type
   setDeviceType,
   updateDeviceType,
   
-  // View Mode
+
   setViewMode,
   toggleViewMode,
   
-  // Language
+  
   setLanguage,
   
-  // Currency
+  
   setCurrency,
   
-  // Image Load Errors
   addImageLoadError,
   removeImageLoadError,
   clearImageLoadErrors,
   
-  // Lazy Loading
   setLazyLoadEnabled,
   
-  // Reduced Motion
   setReducedMotion,
   
-  // Keyboard Shortcuts
   setKeyboardShortcutsEnabled,
   toggleKeyboardShortcuts,
   
-  // Reset
   resetUI,
   
-  // Bulk Actions
   closeAllModalsAndSidebars,
 } = uiSlice.actions;
 
-// ================= SELECTORS =================
 export const selectTheme = (state) => state.ui?.theme || THEMES.LIGHT;
 export const selectIsDarkMode = (state) => state.ui?.theme === THEMES.DARK;
 export const selectModal = (state) => state.ui?.modal || {};
@@ -630,13 +576,11 @@ export const selectLazyLoadEnabled = (state) => state.ui?.lazyLoadEnabled ?? tru
 export const selectReducedMotion = (state) => state.ui?.reducedMotion ?? false;
 export const selectKeyboardShortcutsEnabled = (state) => state.ui?.keyboardShortcutsEnabled ?? true;
 
-// ================= HELPER SELECTORS =================
 export const selectHasNotifications = (state) => (state.ui?.notifications?.length || 0) > 0;
 export const selectUnreadCount = (state) => 
   (state.ui?.notifications || []).filter(n => !n.read).length;
 
-// ================= EXPORT CONSTANTS =================
+
 export { THEMES, DEVICE_TYPES, VIEW_MODES, NOTIFICATION_TYPES, TOAST_DURATION, NOTIFICATION_DURATION };
 
-// ================= DEFAULT EXPORT =================
 export default uiSlice.reducer;

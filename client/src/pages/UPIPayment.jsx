@@ -10,6 +10,7 @@ import {
   ArrowRight, AlertCircle, CreditCard, 
   Wallet, Copy, Check, X, Lock
 } from "lucide-react";
+import { formatPrice } from "../utils/priceUtils";
 
 const UPIPayment = () => {
   const [upiId, setUpiId] = useState("");
@@ -30,7 +31,6 @@ const UPIPayment = () => {
     subTotal = 0 
   } = location.state || {};
 
-  // Cleanup on unmount
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -41,7 +41,6 @@ const UPIPayment = () => {
     };
   }, []);
 
-  // Generate QR code URL when upiId or totalPrice changes
   useEffect(() => {
     const generateQRCodeUrl = () => {
       const validUpiId = upiId && upiId.includes("@") ? upiId : "buyzaar@okhdfcbank";
@@ -221,29 +220,27 @@ const UPIPayment = () => {
   const totalItems = cartitems.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   return (
-    <div className="min-h-screen bg-bg p-4 md:p-8 fade-in">
-      <div className="container-narrow max-w-2xl">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-orange-500 mb-4 shadow-lg">
             <Wallet className="w-8 h-8 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold gradient-text mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent mb-2">
             UPI Payment
           </h1>
-          <p className="text-text-muted">
+          <p className="text-gray-500">
             Pay instantly using any UPI app
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          {/* How to Pay */}
-          <div className="p-5 border-b border-border bg-bg-alt">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center gap-2 mb-3">
-              <Smartphone size={18} className="text-primary" aria-hidden="true" />
-              <h3 className="font-semibold text-text">How to pay:</h3>
+              <Smartphone size={18} className="text-blue-600" aria-hidden="true" />
+              <h3 className="font-semibold text-gray-800">How to pay:</h3>
             </div>
-            <ol className="list-decimal pl-5 text-text-muted text-sm space-y-1">
+            <ol className="list-decimal pl-5 text-gray-500 text-sm space-y-1">
               <li>Enter your UPI ID below</li>
               <li>Scan the QR code or click "Open UPI App"</li>
               <li>Confirm payment in your UPI app</li>
@@ -251,9 +248,8 @@ const UPIPayment = () => {
             </ol>
           </div>
 
-          {/* QR Code Section */}
-          <div className="p-6 text-center border-b border-border">
-            <div className="inline-block p-4 bg-white rounded-2xl shadow-md border border-border">
+          <div className="p-6 text-center border-b border-gray-200">
+            <div className="inline-block p-4 bg-white rounded-2xl shadow-md border border-gray-200">
               <img
                 src={qrCodeUrl}
                 alt="UPI QR Code"
@@ -263,17 +259,16 @@ const UPIPayment = () => {
                 }}
               />
             </div>
-            <p className="mt-3 text-text-muted text-sm flex items-center justify-center gap-1">
+            <p className="mt-3 text-gray-500 text-sm flex items-center justify-center gap-1">
               <QrCode size={14} aria-hidden="true" />
               Scan with any UPI app
             </p>
           </div>
 
-          {/* UPI ID Input */}
-          <div className="p-6 border-b border-border">
-            <label className="label flex items-center gap-2 mb-2">
-              <Smartphone size={16} className="text-primary" aria-hidden="true" />
-              Your UPI ID <span className="text-error">*</span>
+          <div className="p-6 border-b border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Smartphone size={16} className="text-blue-600" aria-hidden="true" />
+              Your UPI ID <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -281,7 +276,9 @@ const UPIPayment = () => {
                 placeholder="e.g., username@okicici, username@ybl"
                 value={upiId}
                 onChange={handleUpiIdChange}
-                className={`input w-full pr-24 ${!isValidUpiId && upiId ? 'border-error' : ''}`}
+                className={`w-full px-4 py-2 pr-24 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  !isValidUpiId && upiId ? 'border-red-500' : 'border-gray-300'
+                }`}
                 aria-invalid={!!upiId && !isValidUpiId}
               />
               <button
@@ -289,8 +286,8 @@ const UPIPayment = () => {
                 disabled={!upiId}
                 className={`absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-all ${
                   upiId 
-                    ? 'bg-primary text-white hover:bg-primary-dark' 
-                    : 'bg-border text-text-muted cursor-not-allowed'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
                 aria-label="Copy UPI ID"
               >
@@ -299,55 +296,52 @@ const UPIPayment = () => {
               </button>
             </div>
             {upiId && !isValidUpiId && (
-              <p className="mt-1 text-xs text-error flex items-center gap-1">
+              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle size={12} aria-hidden="true" />
                 Please enter a valid UPI ID (must contain @ symbol)
               </p>
             )}
-            <p className="text-xs text-text-muted mt-2">
+            <p className="text-xs text-gray-500 mt-2">
               Common UPI handles: @okicici, @ybl, @oksbi, @axl, @paytm
             </p>
           </div>
-
-          {/* Order Summary */}
-          <div className="p-6 border-b border-border bg-bg-alt/50">
-            <h3 className="font-semibold text-text mb-4 flex items-center gap-2">
-              <CreditCard size={16} className="text-primary" aria-hidden="true" />
+          <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <CreditCard size={16} className="text-blue-600" aria-hidden="true" />
               Order Summary
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Items ({totalItems})</span>
-                <span className="text-text">₹{(subTotal || totalPrice).toLocaleString()}</span>
+                <span className="text-gray-500">Items ({totalItems})</span>
+                <span className="text-gray-800">{formatPrice(subTotal || totalPrice)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Shipping</span>
-                <span className="text-success">FREE</span>
+                <span className="text-gray-500">Shipping</span>
+                <span className="text-green-600">FREE</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Tax</span>
-                <span className="text-text">Included</span>
+                <span className="text-gray-500">Tax</span>
+                <span className="text-gray-800">Included</span>
               </div>
-              <div className="border-t border-border pt-3 mt-2">
+              <div className="border-t border-gray-200 pt-3 mt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-text">Total Amount</span>
-                  <span className="text-2xl font-bold gradient-text">
-                    ₹{totalPrice.toLocaleString()}
+                  <span className="text-lg font-semibold text-gray-800">Total Amount</span>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                    {formatPrice(totalPrice)}
                   </span>
                 </div>
-                <p className="text-xs text-text-muted text-center mt-2">
+                <p className="text-xs text-gray-500 text-center mt-2">
                   Amount to be paid via UPI
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="p-6 space-y-3">
             <button
               onClick={handlePayment}
               disabled={loading || !isValidUpiId}
-              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -366,7 +360,7 @@ const UPIPayment = () => {
             <button
               onClick={openUPIApp}
               disabled={!isValidUpiId}
-              className="w-full btn-secondary py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-xl flex items-center justify-center gap-2 hover:border-blue-600 hover:text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Smartphone size={18} />
               Open UPI App
@@ -374,16 +368,15 @@ const UPIPayment = () => {
 
             <button
               onClick={() => navigate(-1)}
-              className="w-full btn-outline py-3 rounded-xl flex items-center justify-center gap-2"
+              className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-xl flex items-center justify-center gap-2 hover:border-blue-600 hover:text-blue-600 transition"
             >
               <X size={18} />
               Back to Payment Options
             </button>
           </div>
 
-          {/* Supported Apps */}
-          <div className="p-5 border-t border-border bg-bg-alt">
-            <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 text-center">
+          <div className="p-5 border-t border-gray-200 bg-gray-50">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 text-center">
               Supported UPI Apps
             </h4>
             <div className="flex justify-center gap-3 flex-wrap">
@@ -395,13 +388,12 @@ const UPIPayment = () => {
             </div>
           </div>
 
-          {/* Security Note */}
-          <div className="p-5 border-t border-border">
+          <div className="p-5 border-t border-gray-200">
             <div className="flex items-start gap-3">
-              <Shield size={18} className="text-success mt-0.5" aria-hidden="true" />
+              <Shield size={18} className="text-green-600 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="text-sm font-medium text-text">Secure Payment</p>
-                <p className="text-xs text-text-muted">
+                <p className="text-sm font-medium text-gray-800">Secure Payment</p>
+                <p className="text-xs text-gray-500">
                   Your payment is processed securely. We never store your UPI ID or banking details.
                 </p>
               </div>
@@ -409,10 +401,9 @@ const UPIPayment = () => {
           </div>
         </div>
 
-        {/* Help Text */}
-        <p className="text-center text-xs text-text-muted mt-6">
+        <p className="text-center text-xs text-gray-500 mt-6">
           Having trouble? Contact our support team at{" "}
-          <a href="mailto:support@buyzaar.com" className="text-primary hover:underline">
+          <a href="mailto:support@buyzaar.com" className="text-blue-600 hover:underline">
             support@buyzaar.com
           </a>
         </p>

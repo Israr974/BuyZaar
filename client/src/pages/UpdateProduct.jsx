@@ -49,7 +49,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
   const abortControllerRef = useRef(null);
   const isMounted = useRef(true);
 
-  // Cleanup on unmount
+
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -60,7 +60,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     };
   }, []);
 
-  // Fetch product by ID
+
   useEffect(() => {
     const fetchProductById = async () => {
       if (!productId) return;
@@ -117,7 +117,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     fetchProductById();
   }, [productId, onClose]);
 
-  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -135,7 +134,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     fetchCategories();
   }, []);
 
-  // Fetch subcategories when category changes
+ 
   useEffect(() => {
     if (!data.category) {
       setSubCategories([]);
@@ -265,7 +264,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
     try {
       const uploadedUrls = [];
 
-      // Upload new images
       for (const file of data.image) {
         if (typeof file === "string") {
           uploadedUrls.push(file);
@@ -317,7 +315,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
       if (!isMounted.current) return;
 
       if (res.data?.success) {
-        toast.success("Product updated successfully! 🎉");
+        toast.success("Product updated successfully!");
         if (onSuccess) {
           onSuccess();
         } else {
@@ -371,7 +369,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
       <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col border border-border">
-        {/* Header */}
         <div className="sticky top-0 z-10 bg-card border-b border-border p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -396,12 +393,9 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column */}
             <div className="space-y-5">
-              {/* Product Name */}
               <div>
                 <label className="label flex items-center gap-2">
                   <Package size={16} className="text-primary" aria-hidden="true" />
@@ -425,7 +419,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                 )}
               </div>
 
-              {/* Category & Subcategory */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
@@ -483,8 +476,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                   )}
                 </div>
               </div>
-
-              {/* Price, Discount, Stock */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
@@ -549,7 +540,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                 </div>
               </div>
 
-              {/* Unit & Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label flex items-center gap-2">
@@ -586,9 +576,7 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
               </div>
             </div>
 
-            {/* Right Column */}
             <div className="space-y-5">
-              {/* Product Images */}
               <div>
                 <label className="label flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -623,7 +611,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                     </div>
                   </label>
 
-                  {/* Image Grid */}
                   {data.image.length > 0 && (
                     <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                       {data.image.map((file, index) => (
@@ -663,7 +650,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
                 <label className="label flex items-center gap-2">
                   <FileText size={16} className="text-primary" aria-hidden="true" />
@@ -683,7 +669,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
                 </p>
               </div>
 
-              {/* More Details */}
               <div>
                 <label className="label flex items-center gap-2">
                   <FileText size={16} className="text-primary" aria-hidden="true" />
@@ -706,7 +691,6 @@ const UpdateProduct = ({ productId, onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 bg-card border-t border-border p-5">
           <div className="flex justify-end gap-3">
             <button

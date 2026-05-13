@@ -2,7 +2,6 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ================= ECOMMERCE THEME ================= */
 @theme ecommerce {
   --color-primary: #284595;
   --color-primary-dark: #1E367A;
@@ -33,7 +32,6 @@
   --shadow-sm: 0 2px 5px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* ================= GRADIENTS ================= */
 .bg-gradient-primary {
   background: linear-gradient(90deg, #284595, #069fe2);
 }
@@ -69,13 +67,11 @@
   z-index: -1;
 }
 
-/* ================= BODY ================= */
 body {
   @apply bg-bg text-text font-sans antialiased;
   min-height: 100vh;
 }
 
-/* ================= SCROLLBAR ================= */
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -93,24 +89,20 @@ body {
   opacity: 0.8;
 }
 
-/* ================= SELECTION ================= */
 ::selection {
   background: linear-gradient(90deg, rgba(40, 69, 149, 0.3), rgba(6, 159, 226, 0.3));
   color: var(--color-text);
 }
 
-/* ================= FOCUS ================= */
 :focus-visible {
   @apply outline-2 outline-offset-2;
   outline-color: #069fe2;
 }
 
-/* ================= TYPOGRAPHY ================= */
 h1, h2, h3, h4, h5, h6 {
   @apply font-display font-bold tracking-tight text-text;
 }
 
-/* ================= BUTTONS ================= */
 .btn {
   @apply inline-flex items-center justify-center font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
 }
@@ -170,7 +162,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, rgba(40, 69, 149, 0.05), rgba(6, 159, 226, 0.05));
 }
 
-/* ================= PRODUCT CARD ================= */
 .product-card {
   @apply bg-card rounded-xl border border-border shadow-sm transition-all duration-300 overflow-hidden;
 }
@@ -209,7 +200,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, #284595, #069fe2);
 }
 
-/* ================= CART COMPONENTS ================= */
 .cart-item {
   @apply flex gap-4 py-4 border-b border-border;
 }
@@ -231,7 +221,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply w-12 text-center border border-border rounded py-1;
 }
 
-/* ================= RATING STARS ================= */
 .rating {
   @apply flex items-center gap-1;
 }
@@ -244,7 +233,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply text-border;
 }
 
-/* ================= INPUTS ================= */
 .input {
   @apply w-full px-4 py-3 border border-border rounded-lg outline-none transition bg-card;
 }
@@ -267,7 +255,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply block text-sm font-medium text-text-muted mb-2;
 }
 
-/* ================= BADGES ================= */
 .badge {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
 }
@@ -290,7 +277,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply bg-warning text-white;
 }
 
-/* ================= ALERTS ================= */
 .alert-success {
   @apply bg-success/10 border border-success/20 text-success rounded-lg p-4;
 }
@@ -303,7 +289,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply bg-warning/10 border border-warning/20 text-warning rounded-lg p-4;
 }
 
-/* ================= CHECKOUT STEPS ================= */
 .checkout-step {
   @apply flex items-center gap-3;
 }
@@ -322,7 +307,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, #10B981, #059669);
 }
 
-/* ================= PRICE DISPLAY ================= */
 .price-large {
   @apply text-3xl font-bold;
   background: linear-gradient(90deg, #284595, #069fe2);
@@ -339,7 +323,6 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-text-fill-color: transparent;
 }
 
-/* ================= HERO SECTION ================= */
 .hero-section {
   @apply relative overflow-hidden;
   background: linear-gradient(90deg, rgba(40, 69, 149, 0.05), rgba(6, 159, 226, 0.05));
@@ -357,14 +340,12 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
-/* ================= LOADER ================= */
 .spinner {
   @apply inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-r-transparent;
   border-color: #069fe2;
   border-right-color: transparent;
 }
 
-/* ================= ANIMATIONS ================= */
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -419,7 +400,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: bounce 0.6s infinite;
 }
 
-/* ================= GLASS EFFECT ================= */
 .glass {
   @apply backdrop-blur-md bg-white/80 border border-white/30 shadow-lg;
 }
@@ -428,7 +408,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply backdrop-blur-md bg-black/5 border border-white/10 shadow-lg;
 }
 
-/* ================= LAYOUT ================= */
 .section-padding {
   @apply px-6 py-12 md:px-12 lg:px-24;
 }
@@ -441,7 +420,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply max-w-[1440px] mx-auto;
 }
 
-/* ================= STATS CARD ================= */
 .stat-card {
   @apply bg-card rounded-xl p-6 border border-border transition-all duration-300;
 }
@@ -467,7 +445,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply text-sm text-text-muted mt-1;
 }
 
-/* ================= DIVIDER ================= */
 .divider {
   @apply h-px bg-border my-6;
 }
@@ -477,7 +454,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, transparent, #284595, #069fe2, transparent);
 }
 
-/* ================= RESPONSIVE ================= */
 .mobile-only {
   @apply block md:hidden;
 }
@@ -486,13 +462,11 @@ h1, h2, h3, h4, h5, h6 {
   @apply hidden md:block;
 }
 
-/* ================= TOAST NOTIFICATION ================= */
 .toast {
   @apply fixed top-4 right-4 bg-card border border-border rounded-lg shadow-xl p-4 max-w-sm;
   animation: slideInRight 0.3s ease-out;
 }
 
-/* ================= PROGRESS BAR ================= */
 .progress-bar {
   @apply w-full h-2 rounded-full overflow-hidden;
   background: linear-gradient(90deg, rgba(40, 69, 149, 0.2), rgba(6, 159, 226, 0.2));
@@ -508,7 +482,6 @@ h1, h2, h3, h4, h5, h6 {
   from { width: 0; }
 }
 
-/* ================= TOGGLE SWITCH ================= */
 .toggle-switch {
   @apply relative inline-block w-12 h-6 rounded-full transition-all duration-300;
   background: linear-gradient(90deg, #284595, #069fe2);
@@ -523,7 +496,6 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(24px);
 }
 
-/* ================= PRINT ================= */
 @media print {
   .no-print {
     @apply hidden;
@@ -534,7 +506,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* ================= PRODUCT SLIDER STYLES ================= */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -586,7 +557,6 @@ h1, h2, h3, h4, h5, h6 {
 .slider-edge-left { mask-image: linear-gradient(to right, transparent, black 20%); }
 .slider-edge-right { mask-image: linear-gradient(to left, transparent, black 20%); }
 
-/* ================= HOME PAGE STYLES ================= */
 @keyframes slideIn {
   from { opacity: 0; transform: scale(1.05); }
   to { opacity: 1; transform: scale(1); }
@@ -643,7 +613,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: shimmer 2s infinite;
 }
 
-/* ================= CARD PRODUCT STYLES ================= */
 .product-image-container {
   overflow: hidden;
   position: relative;
@@ -679,7 +648,6 @@ h1, h2, h3, h4, h5, h6 {
 .quick-action-btn:nth-child(2) { transition-delay: 0.1s; }
 .quick-action-btn:nth-child(3) { transition-delay: 0.15s; }
 
-/* ================= CART SIDEBAR STYLES ================= */
 .cart-sidebar { animation: slideInRight 0.3s ease-out; }
 
 @keyframes fadeInUp {
@@ -688,7 +656,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 .cart-item-enter { animation: fadeInUp 0.3s ease-out; }
 
-/* ================= CHECKOUT STYLES ================= */
 .order-summary {
   background: linear-gradient(135deg, var(--color-bg-alt), var(--color-card));
   border-radius: var(--radius-lg);
@@ -705,7 +672,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, rgba(40, 69, 149, 0.05), rgba(6, 159, 226, 0.05));
 }
 
-/* ================= USER DASHBOARD STYLES ================= */
 .dashboard-sidebar {
   background: var(--color-card);
   border-radius: var(--radius-lg);
@@ -847,7 +813,6 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-primary);
 }
 
-/* ================= SHIMMER ANIMATION ================= */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -859,14 +824,12 @@ h1, h2, h3, h4, h5, h6 {
 .shimmer-fast { animation: shimmer 1s ease-in-out infinite; }
 .shimmer-slow { animation: shimmer 2s ease-in-out infinite; }
 
-/* ================= CONFIRM BOX ANIMATIONS ================= */
 @keyframes zoomIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
 
-/* ================= CART SIDEBAR ANIMATIONS ================= */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -879,7 +842,6 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 3px;
 }
 
-/* ================= SPINNER ================= */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -890,7 +852,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: spin 0.6s linear infinite;
 }
 
-/* ================= ROOT VARIABLES ================= */
 :root {
   --color-success: #10B981;
   --color-error: #EF4444;
@@ -898,14 +859,12 @@ h1, h2, h3, h4, h5, h6 {
   --color-info: #3B82F6;
 }
 
-/* ================= TOAST ANIMATION ================= */
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
 .toast-container { animation: slideIn 0.3s ease-out; }
 
-/* ================= REDUCED MOTION ================= */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -914,7 +873,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* ================= DARK MODE ================= */
 .dark {
   --color-primary: #3B82F6;
   --color-primary-dark: #2563EB;
@@ -1000,11 +958,9 @@ h1, h2, h3, h4, h5, h6 {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ================= INPUT ICONS ================= */
 .input-icon-left { padding-left: 2.5rem; }
 .input-icon-right { padding-right: 6rem; }
 
-/* ================= SEARCH COMPONENT STYLES ================= */
 .search-form {
   position: relative;
   width: 100%;
@@ -1228,7 +1184,6 @@ h1, h2, h3, h4, h5, h6 {
 .suggestion-text { font-size: 14px; color: var(--text, #1f2937); }
 @media (min-width: 640px) { .suggestion-text { font-size: 16px; } }
 
-/* ================= MOBILE SEARCH STYLES ================= */
 .mobile-search-overlay {
   position: fixed;
   inset: 0;
@@ -1405,4 +1360,17 @@ h1, h2, h3, h4, h5, h6 {
 .mobile-loading-text {
   color: var(--text-muted, #6b7280);
   font-size: 14px;
+}
+
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
 }

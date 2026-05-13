@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { setUser } from "../redux/userSlice";
-import { setAllCategory, setLoadingCategory, setSubCategory } from "../redux/productSlice";
+import { 
+  setAllCategory,
+  setLoadingCategory,
+  setSubCategory,
+  setProducts,
+  setFlashSaleProducts, 
+  setFlashSaleLoading
+} from "../redux/productSlice";
 import { setCartItems, clearCart } from "../redux/cartSlice";
 import { setWishlist } from "../redux/wishlistSlice";
 
@@ -26,7 +34,7 @@ const GlobalProvider = ({ children }) => {
     setLoadingStates(prev => ({ ...prev, [key]: value }));
   };
 
-  const fetchAllCategory = async () => {
+  const fetchAllCategory = useCallback(async () => {
     try {
       updateLoadingState('categories', true);
       dispatch(setLoadingCategory(true));
@@ -34,30 +42,28 @@ const GlobalProvider = ({ children }) => {
       const categories = res?.data?.data || [];
       dispatch(setAllCategory(categories));
     } catch (error) {
-      console.error("Failed to fetch categories:", error);
       AxiosError(error);
-      toast.error("Failed to load categories");
     } finally {
       updateLoadingState('categories', false);
       dispatch(setLoadingCategory(false));
     }
-  };
+  }, [dispatch]);
 
-  const fetchAllSubCategory = async () => {
+  const fetchAllSubCategory = useCallback(async () => {
     try {
       updateLoadingState('subCategories', true);
       const res = await Axios({ ...summaryApi().getSubcategory });
       const subCategories = res?.data?.data || [];
       dispatch(setSubCategory(subCategories));
     } catch (error) {
-      console.error("Failed to fetch subcategories:", error);
+     
       AxiosError(error);
     } finally {
       updateLoadingState('subCategories', false);
     }
-  };
+  }, [dispatch]);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       updateLoadingState('cart', true);
       const res = await Axios({ ...summaryApi().getCartProducts });
@@ -67,14 +73,14 @@ const GlobalProvider = ({ children }) => {
         dispatch(clearCart());
       }
     } catch (err) {
-      console.error("Error fetching cart", err);
+    AxiosError(err);
       dispatch(clearCart());
     } finally {
       updateLoadingState('cart', false);
     }
-  };
+  }, [dispatch]);
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     try {
       updateLoadingState('wishlist', true);
       const token = localStorage.getItem("token");
@@ -94,14 +100,14 @@ const GlobalProvider = ({ children }) => {
         dispatch(setWishlist([]));
       }
     } catch (err) {
-      console.error("Error fetching wishlist", err);
+      AxiosError(err);
       dispatch(setWishlist([]));
     } finally {
       updateLoadingState('wishlist', false);
     }
-  };
+  }, [dispatch]);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       updateLoadingState('user', true);
       const userData = await fetchUserDetails();
@@ -126,31 +132,62 @@ const GlobalProvider = ({ children }) => {
         dispatch(setUser(null));
       }
     } catch (err) {
-      console.error("Error fetching user", err);
+   AxiosError(err);
       dispatch(setUser(null));
     } finally {
       updateLoadingState('user', false);
     }
-  };
+  }, [dispatch]);
 
-  // Initialize all data
+ 
+  const fetchProductsAndFlashSale = useCallback(async () => {
+    try {
+      dispatch(setFlashSaleLoading(true));
+      
+      const res = await Axios({ ...summaryApi().getProduct,
+        params: { limit: 100 }
+       });
+      
+      if (res.data?.success) {
+        const allProducts = res.data.data || [];
+        dispatch(setProducts(allProducts));
+
+        const flashProducts = allProducts.filter(product => {
+          const discount = product.discount || 0;
+          const stock = product.stock || 0;
+          return discount >= 30 && stock > 0;
+        });
+        flashProducts.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+      
+        dispatch(setFlashSaleProducts(flashProducts.slice(0, 10)));
+      } else {
+        console.log("API response success false:", res.data);
+      }
+    } catch (error) {
+      AxiosError(error);
+    } finally {
+      dispatch(setFlashSaleLoading(false));
+    }
+  }, [dispatch]);
+
+
   useEffect(() => {
     const initializeApp = async () => {
-      // Run all fetch operations in parallel for better performance
       await Promise.allSettled([
         fetchAllCategory(),
         fetchAllSubCategory(),
         fetchUser(),
         fetchCart(),
-        fetchWishlist()
+        fetchWishlist(),
+        fetchProductsAndFlashSale(),
       ]);
+      
       setIsInitialized(true);
     };
 
     initializeApp();
-  }, []);
+  }, [fetchAllCategory, fetchAllSubCategory, fetchUser, fetchCart, fetchWishlist, fetchProductsAndFlashSale]);
 
-  // Refresh cart and wishlist when user changes
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && isInitialized) {
@@ -160,19 +197,18 @@ const GlobalProvider = ({ children }) => {
       dispatch(clearCart());
       dispatch(setWishlist([]));
     }
-  }, [isInitialized]);
+  }, [isInitialized, fetchCart, fetchWishlist, dispatch]);
 
-  // Show loading state if needed (optional)
   if (!isInitialized) {
     return (
-      <div className="fixed inset-0 bg-bg flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
         <div className="text-center">
-          <div className="spinner w-12 h-12 mb-4"></div>
-          <p className="text-text-muted">Loading your experience...</p>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading your experience...</p>
           <div className="mt-4 flex gap-2 justify-center">
-            <div className={`w-2 h-2 rounded-full bg-primary animate-bounce`} style={{ animationDelay: '0ms' }}></div>
-            <div className={`w-2 h-2 rounded-full bg-primary animate-bounce`} style={{ animationDelay: '150ms' }}></div>
-            <div className={`w-2 h-2 rounded-full bg-primary animate-bounce`} style={{ animationDelay: '300ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
           </div>
         </div>
       </div>

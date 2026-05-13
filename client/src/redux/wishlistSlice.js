@@ -1,10 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// ================= CONSTANTS =================
+
 const STORAGE_KEY = "wishlist";
 const MAX_WISHLIST_ITEMS = 100;
 
-// ================= HELPER FUNCTIONS =================
 const saveToLocalStorage = (state) => {
   if (typeof window === "undefined") return;
   
@@ -35,7 +34,7 @@ const loadFromLocalStorage = () => {
 };
 
 const normalizeProduct = (product) => {
-  // Get product ID from various possible structures
+
   const productId = product?.productId?._id || 
                     product?.productId || 
                     product?._id || 
@@ -67,7 +66,6 @@ const isProductInWishlist = (items, productId) => {
   );
 };
 
-// ================= INITIAL STATE =================
 const getInitialState = () => {
   const savedState = loadFromLocalStorage();
   
@@ -78,7 +76,7 @@ const getInitialState = () => {
       loading: false,
       error: null,
       lastUpdated: savedState.lastUpdated || new Date().toISOString(),
-      syncStatus: "idle", // idle, syncing, synced, error
+      syncStatus: "idle", 
     };
   }
   
@@ -94,12 +92,10 @@ const getInitialState = () => {
 
 const initialState = getInitialState();
 
-// ================= SLICE =================
 const wishlistSlice = createSlice({
   name: "wishlist",
   initialState,
   reducers: {
-    // ================= SET WISHLIST =================
     setWishlist: (state, action) => {
       const items = action.payload;
       const normalizedItems = items.map(normalizeProduct);
@@ -112,18 +108,15 @@ const wishlistSlice = createSlice({
       saveToLocalStorage(state);
     },
     
-    // ================= ADD TO WISHLIST =================
     addToWishlist: (state, action) => {
       const product = action.payload;
       const productId = product?.productId?._id || product?._id || product?.productId;
       
-      // Check if already exists
       if (isProductInWishlist(state.items, productId)) {
         state.error = "Product already in wishlist";
         return;
       }
       
-      // Check max limit
       if (state.items.length >= MAX_WISHLIST_ITEMS) {
         state.error = `Wishlist cannot exceed ${MAX_WISHLIST_ITEMS} items`;
         return;
@@ -138,7 +131,6 @@ const wishlistSlice = createSlice({
       saveToLocalStorage(state);
     },
     
-    // ================= REMOVE FROM WISHLIST =================
     removeFromWishlist: (state, action) => {
       const productId = action.payload;
       const originalLength = state.items.length;
@@ -158,7 +150,6 @@ const wishlistSlice = createSlice({
       }
     },
     
-    // ================= REMOVE MULTIPLE =================
     removeMultipleFromWishlist: (state, action) => {
       const productIds = new Set(action.payload);
       const originalLength = state.items.length;
@@ -176,7 +167,6 @@ const wishlistSlice = createSlice({
       }
     },
     
-    // ================= CLEAR WISHLIST =================
     clearWishlist: (state) => {
       state.items = [];
       state.totalItems = 0;
@@ -185,7 +175,6 @@ const wishlistSlice = createSlice({
       saveToLocalStorage(state);
     },
     
-    // ================= MOVE TO CART =================
     moveToCart: (state, action) => {
       const productId = action.payload;
       const itemToMove = state.items.find(
@@ -202,13 +191,11 @@ const wishlistSlice = createSlice({
         state.lastUpdated = new Date().toISOString();
         saveToLocalStorage(state);
         
-        // Return the moved item for cart action
         return { movedItem: itemToMove };
       }
       return null;
     },
     
-    // ================= MOVE ALL TO CART =================
     moveAllToCart: (state) => {
       const movedItems = [...state.items];
       state.items = [];
@@ -219,7 +206,6 @@ const wishlistSlice = createSlice({
       return { movedItems };
     },
     
-    // ================= UPDATE WISHLIST ITEM =================
     updateWishlistItem: (state, action) => {
       const { productId, updates } = action.payload;
       const index = state.items.findIndex(
@@ -241,7 +227,6 @@ const wishlistSlice = createSlice({
       }
     },
     
-    // ================= BULK ADD =================
     bulkAddToWishlist: (state, action) => {
       const products = action.payload;
       const newItems = [];
@@ -263,13 +248,11 @@ const wishlistSlice = createSlice({
       }
     },
     
-    // ================= CHECK IN WISHLIST =================
     checkInWishlist: (state, action) => {
       const productId = action.payload;
       return isProductInWishlist(state.items, productId);
     },
     
-    // ================= SYNC WITH BACKEND =================
     syncWishlistStart: (state) => {
       state.syncStatus = "syncing";
     },
@@ -278,7 +261,6 @@ const wishlistSlice = createSlice({
       const serverItems = action.payload;
       const normalizedItems = serverItems.map(normalizeProduct);
       
-      // Merge local and server items (server takes precedence)
       const localIds = new Set(state.items.map(item => item.id));
       const mergedItems = [...normalizedItems];
       
@@ -302,7 +284,6 @@ const wishlistSlice = createSlice({
       state.error = action.payload;
     },
     
-    // ================= LOADING & ERROR STATES =================
     setWishlistLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -315,7 +296,6 @@ const wishlistSlice = createSlice({
       state.error = null;
     },
     
-    // ================= RESET =================
     resetWishlist: () => {
       if (typeof window !== "undefined") {
         localStorage.removeItem(STORAGE_KEY);
@@ -325,7 +305,6 @@ const wishlistSlice = createSlice({
   },
 });
 
-// ================= EXPORT ACTIONS =================
 export const {
   setWishlist,
   addToWishlist,
@@ -346,7 +325,6 @@ export const {
   resetWishlist,
 } = wishlistSlice.actions;
 
-// ================= SELECTORS =================
 export const selectWishlistItems = (state) => state.wishlist?.items || [];
 export const selectWishlistCount = (state) => state.wishlist?.totalItems || 0;
 export const selectWishlistLoading = (state) => state.wishlist?.loading || false;
@@ -354,7 +332,6 @@ export const selectWishlistError = (state) => state.wishlist?.error || null;
 export const selectWishlistLastUpdated = (state) => state.wishlist?.lastUpdated || null;
 export const selectWishlistSyncStatus = (state) => state.wishlist?.syncStatus || "idle";
 
-// ================= DERIVED SELECTORS =================
 export const selectIsInWishlist = (productId) => (state) => {
   const items = selectWishlistItems(state);
   return items.some(
@@ -434,14 +411,11 @@ export const selectWishlistGroupedByCategory = (state) => {
   return grouped;
 };
 
-// ================= HELPER SELECTORS =================
 export const selectHasWishlistItems = (state) => selectWishlistCount(state) > 0;
 export const selectIsWishlistEmpty = (state) => selectWishlistCount(state) === 0;
 export const selectIsWishlistFull = (state) => selectWishlistCount(state) >= MAX_WISHLIST_ITEMS;
 export const selectRemainingWishlistSlots = (state) => MAX_WISHLIST_ITEMS - selectWishlistCount(state);
 
-// ================= EXPORT CONSTANTS =================
 export { MAX_WISHLIST_ITEMS };
 
-// ================= DEFAULT EXPORT =================
 export default wishlistSlice.reducer;

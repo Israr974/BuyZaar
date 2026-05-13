@@ -38,10 +38,10 @@ import ReturnPolicy from "../pages/ReturnPolicy";
 import ShippingInfo from "../pages/ShippingInfo";
 import Setting from "../pages/Setting"
 import HelpCenter from "../pages/HelpCenter"
+import FlashSalePage from "../pages/FlashSalePage";
 
-// ================= CONSTANTS =================
 const ROUTES = {
-  // Public Routes
+
   HOME: "/",
   SEARCH: "/search",
   LOGIN: "/login",
@@ -51,12 +51,12 @@ const ROUTES = {
   RESET_PASSWORD: "/reset-password",
   USER_MOBILE: "/user",
   
-  // Product Routes
+
   PRODUCT: "/product/:product",
   CATEGORY: "/:category",
   CATEGORY_SUBCATEGORY: "/:category/:subcategory",
   
-  // Checkout Routes
+
   CHECKOUT: "/checkout",
   PAYMENT_COD: "/payment/cod",
   PAYMENT_CARD: "/payment/card",
@@ -64,7 +64,6 @@ const ROUTES = {
   PAYMENT_SUCCESS: "/payment/success",
   PAYMENT_FAIL: "/payment/fail",
   
-  // Dashboard Routes (Auth Required)
   DASHBOARD: "/dashboard",
   DASHBOARD_PROFILE: "/dashboard/profile",
   DASHBOARD_MYORDERS: "/dashboard/myorder",
@@ -73,14 +72,12 @@ const ROUTES = {
   DASHBOARD_SETTINGS: "/dashboard/setting",
   DASHBOARD_HELP: "/dashboard/help",
   
-  // Admin Routes
   ADMIN_CATEGORY: "/dashboard/category",
   ADMIN_SUBCATEGORY: "/dashboard/subcategory",
   ADMIN_UPLOAD_PRODUCT: "/dashboard/uploadproduct",
   ADMIN_PRODUCTS: "/dashboard/product",
   ADMIN_ORDERS: "/dashboard/order",
   
-  // Info Routes
   ABOUT: "/about",
   CONTACT: "/contact",
   FAQ: "/faq",
@@ -90,7 +87,7 @@ const ROUTES = {
   SHIPPING_INFO: "/shipping-info",
 };
 
-// ================= PUBLIC ROUTES =================
+
 const publicRoutes = [
   { path: ROUTES.HOME, element: <Home /> },
   { path: ROUTES.SEARCH, element: <SearchPage /> },
@@ -102,15 +99,16 @@ const publicRoutes = [
   { path: ROUTES.USER_MOBILE, element: <MobileUser /> },
 ];
 
-// ================= PRODUCT ROUTES =================
+
 const productRoutes = [
   { path: ROUTES.PRODUCT, element: <ProductDisplayPage /> },
   { path: ROUTES.CATEGORY, children: [
-    { path: ":subcategory", element: <ProductList /> }
+    { path: ":subcategory", element: <ProductList /> },
+    
   ]},
+  {path:"/flash-sale", element:<FlashSalePage />}
 ];
 
-// ================= CHECKOUT ROUTES (Auth Required) =================
 const checkoutRoutes = [
   { path: ROUTES.CHECKOUT, element: <RequireAuth><CheckOutPage /></RequireAuth> },
   { path: ROUTES.PAYMENT_COD, element: <RequireAuth><CODPayment /></RequireAuth> },
@@ -120,7 +118,7 @@ const checkoutRoutes = [
   { path: ROUTES.PAYMENT_FAIL, element: <PaymentFail /> },
 ];
 
-// ================= INFO ROUTES =================
+
 const infoRoutes = [
   { path: ROUTES.ABOUT, element: <AboutUs /> },
   { path: ROUTES.CONTACT, element: <ContactUs /> },
@@ -131,7 +129,7 @@ const infoRoutes = [
   { path: ROUTES.SHIPPING_INFO, element: <ShippingInfo /> },
 ];
 
-// ================= DASHBOARD ROUTES =================
+
 const dashboardChildren = [
   { path: "profile", element: <Profile /> },
   { path: "myorder", element: <MyOrder /> },
@@ -140,7 +138,7 @@ const dashboardChildren = [
   { path: "setting", element: <Setting /> },
   { path: "help", element: <HelpCenter /> },
   
-  // Admin routes
+
   { path: "category", element: <AdminPermission><Category /></AdminPermission> },
   { path: "order", element: <AdminPermission><Orders /></AdminPermission> },
   { path: "subcategory", element: <AdminPermission><SubCategory /></AdminPermission> },
@@ -148,7 +146,6 @@ const dashboardChildren = [
   { path: "product", element: <AdminPermission><ProductAdmin /></AdminPermission> },
 ];
 
-// ================= ERROR HANDLING =================
 const ErrorBoundary = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
@@ -163,36 +160,35 @@ const ErrorBoundary = () => {
   );
 };
 
-// ================= REDIRECTS =================
+
 const redirects = [
   { path: "/admin", element: <Navigate to="/dashboard" replace /> },
   { path: "/account", element: <Navigate to="/dashboard/profile" replace /> },
   { path: "/cart", element: <Navigate to="/checkout" replace /> },
 ];
 
-// ================= ROUTER CONFIGURATION =================
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
     errorElement: <ErrorBoundary />,
     children: [
-      // Public Routes
+      
       ...publicRoutes,
       
-      // Product Routes
+      
       ...productRoutes,
       
-      // Checkout Routes
+    
       ...checkoutRoutes,
       
-      // Info Routes
+    
       ...infoRoutes,
       
-      // Redirects
+      
       ...redirects,
       
-      // Dashboard Route
+    
       {
         path: ROUTES.DASHBOARD,
         element: <RequireAuth><Dashboard /></RequireAuth>,
@@ -200,14 +196,14 @@ const router = createBrowserRouter([
       },
     ],
   },
-  // Catch all route for 404
+
   {
     path: "*",
     element: <ErrorBoundary />,
   },
 ]);
 
-// ================= HELPER FUNCTIONS =================
+
 export const getRoutePath = (routeName, params = {}) => {
   let path = ROUTES[routeName] || routeName;
   
@@ -241,6 +237,5 @@ export const navigateToSubcategory = (categoryId, categoryName, subcategoryId, s
   return `/${categorySlug}-${categoryId}/${subcategorySlug}-${subcategoryId}`;
 };
 
-// ================= EXPORT =================
 export { ROUTES };
 export default router;

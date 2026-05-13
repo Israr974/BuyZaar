@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import connectDB from './config/connectDb.js';
 
-// Routes
+
 import userRoute from './routes/userRoutes.js';
 import categoryRouter from './routes/categoryRoutes.js';
 import subCategoryRouter from './routes/subCategoryRoutes.js';
@@ -19,12 +19,14 @@ import paymentRouter from './routes/paymentRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import wishlistRouter from './routes/wishlistRoutes.js';
 import reviewRouter from './routes/reviewRoutes.js';
+import bannerRoutes from './routes/bannerRoutes.js'
+import galleryRouter from './routes/galleryRoutes.js';
 
 dotenv.config();
 
 const app = express();
 
-// ================= MIDDLEWARE =================
+
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -57,7 +59,6 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin" }
 }));
 
-// ================= ROUTES =================
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -79,6 +80,8 @@ app.use("/api/payment", paymentRouter);
 app.use('/api/search', searchRoutes);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/reviews", reviewRouter);
+app.use('/api/banner', bannerRoutes);
+app.use('/api/gallery',galleryRouter)
 
 app.get("/", (req, res) => {
   res.json({
@@ -88,7 +91,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// ================= ERROR HANDLING =================
+
 
 app.use((req, res) => {
   res.status(404).json({
@@ -128,7 +131,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ================= START SERVER =================
 
 const PORT = process.env.PORT || 3030;
 

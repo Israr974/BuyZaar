@@ -115,7 +115,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
         }
       } catch (error) {
         if (isMounted.current) {
-          console.error("Fetch categories error:", error);
+      
           toast.error(error.response?.data?.message || "Failed to load categories");
         }
       } finally {
@@ -128,7 +128,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     fetchCategories();
   }, []);
 
-  // Fetch subcategories - Fixed version
+ 
   useEffect(() => {
     const fetchSubCategories = async () => {
       try {
@@ -155,7 +155,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
     fetchSubCategories();
   }, []);
 
-  // Filter subcategories based on selected category
+
   useEffect(() => {
     if (!data.category) {
       setAvailableSubCategories([]);
@@ -410,7 +410,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
 
   return (
     <div className="w-full max-w-6xl p-6 md:p-8 overflow-y-auto max-h-[90vh] custom-scrollbar">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
         <div>
           <h2 className="text-2xl md:text-3xl font-display font-bold gradient-text">
@@ -430,7 +429,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
         </button>
       </div>
 
-      {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-card rounded-xl p-6 text-center border border-border">
@@ -442,9 +440,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <Tag className="text-primary" size={20} aria-hidden="true" />
@@ -452,13 +448,12 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Product Name */}
               <div className="md:col-span-2">
                 <label className="label flex items-center gap-1">
                   Product Name <span className="text-error">*</span>
                 </label>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+            
                   <input
                     type="text"
                     name="name"
@@ -476,12 +471,11 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                   </p>
                 )}
               </div>
-              
-              {/* SKU */}
+          
               <div>
                 <label className="label">SKU (Optional)</label>
                 <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+                  
                   <input
                     type="text"
                     name="sku"
@@ -492,8 +486,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                   />
                 </div>
               </div>
-              
-              {/* Brand */}
+
               <div>
                 <label className="label">Brand (Optional)</label>
                 <input
@@ -506,13 +499,12 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 />
               </div>
               
-              {/* Unit */}
               <div className="md:col-span-2">
                 <label className="label flex items-center gap-1">
                   Unit <span className="text-error">*</span>
                 </label>
                 <div className="relative">
-                  <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} aria-hidden="true" />
+                  
                   <input
                     type="text"
                     name="unit"
@@ -532,7 +524,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
           </div>
 
-          {/* Pricing & Inventory */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <DollarSign className="text-primary" size={20} aria-hidden="true" />
@@ -540,7 +531,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Price */}
               <div>
                 <label className="label flex items-center gap-1">
                   Price (₹) <span className="text-error">*</span>
@@ -560,7 +550,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 )}
               </div>
               
-              {/* Discount */}
               <div>
                 <label className="label">Discount (%)</label>
                 <input
@@ -578,7 +567,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 )}
               </div>
               
-              {/* Stock */}
               <div>
                 <label className="label flex items-center gap-1">
                   Stock <span className="text-error">*</span>
@@ -597,7 +585,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
                 )}
               </div>
               
-              {/* Status */}
               <div>
                 <label className="label">Status</label>
                 <select
@@ -613,7 +600,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
           </div>
 
-          {/* Categories */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <Layers className="text-primary" size={20} aria-hidden="true" />
@@ -707,7 +693,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
           </div>
 
-          {/* Descriptions */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <CheckCircle className="text-primary" size={20} aria-hidden="true" />
@@ -753,9 +738,7 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
           </div>
         </div>
 
-        {/* Right Column - Images & Actions */}
         <div className="space-y-6">
-          {/* Product Images */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <ImageIcon className="text-primary" size={20} aria-hidden="true" />
@@ -839,7 +822,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             )}
           </div>
 
-          {/* Specifications */}
           <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
               <Info className="text-primary" size={20} aria-hidden="true" />
@@ -879,7 +861,6 @@ const UploadProduct = ({ onClose, fetchProducts, onSuccess }) => {
             </div>
           </div>
           
-          {/* Actions */}
           <div className="bg-card rounded-xl border border-border p-5 sticky top-6">
             <h3 className="text-lg font-semibold text-text mb-4">Actions</h3>
             

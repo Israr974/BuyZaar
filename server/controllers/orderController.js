@@ -207,18 +207,17 @@ export const placeOrder = async (req, res) => {
     }
     
     await user.save();
-
-    for (const item of validatedItems) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        { 
-          $inc: { 
-            stock: -item.quantity,
-            sold: item.quantity 
-          } 
-        }
-      );
+for (const item of validatedItems) {
+  await Product.findByIdAndUpdate(
+    item.product,
+    { 
+      $inc: { 
+        stock: -item.quantity,
+        soldCount: item.quantity 
+      } 
     }
+  );
+}
 
     return res.status(201).json({
       success: true,
@@ -377,12 +376,26 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
     
+    // If cancelling, restore stock and adjust soldCount
+    if (status === "cancelled" && order.orderStatus !== "cancelled") {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { 
+            $inc: { 
+              stock: item.quantity,
+              soldCount: -item.quantity
+            } 
+          }
+        );
+      }
+      order.cancelledAt = new Date();
+    }
+    
     order.orderStatus = status;
     
     if (status === "delivered") {
       order.deliveredAt = new Date();
-    } else if (status === "cancelled") {
-      order.cancelledAt = new Date();
     }
     
     await order.save();
@@ -439,11 +452,16 @@ export const cancelOrder = async (req, res) => {
     
     await order.save();
     
-    if (order.items && order.items.length > 0) {
+   if (order.items && order.items.length > 0) {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
           item.product,
-          { $inc: { stock: item.quantity } }
+          { 
+            $inc: { 
+              stock: item.quantity,          
+              soldCount: -item.quantity       
+            } 
+          }
         );
       }
     }

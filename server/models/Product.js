@@ -99,6 +99,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    soldCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true

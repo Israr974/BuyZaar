@@ -22,7 +22,7 @@ router.get("/:id", getOrderById);
 router.put("/:id/cancel", cancelOrder);
 
 
-router.get("/", adminAuth, getAllOrders); // Get all orders (admin only)
-router.put("/:id/status", adminAuth, updateOrderStatus); // Update status (admin only)
+router.get("/", adminAuth, getAllOrders); 
+router.put("/:id/status", adminAuth, updateOrderStatus);
 
 export default router;

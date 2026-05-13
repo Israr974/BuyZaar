@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// ================= CONSTANTS =================
 const STORAGE_KEY = "order_stats";
 const ORDER_STATUSES = {
   PENDING: "pending",
@@ -12,7 +11,6 @@ const ORDER_STATUSES = {
 
 const ORDER_STATUS_LIST = Object.values(ORDER_STATUSES);
 
-// ================= HELPER FUNCTIONS =================
 const getOrderStatus = (order) => {
   return order?.status || order?.orderStatus || ORDER_STATUSES.PENDING;
 };
@@ -81,7 +79,6 @@ const loadStatsFromLocalStorage = () => {
   return null;
 };
 
-// ================= INITIAL STATE =================
 const getInitialState = () => {
   const savedStats = loadStatsFromLocalStorage();
 
@@ -124,18 +121,15 @@ const getInitialState = () => {
 
 const initialState = getInitialState();
 
-// ================= SLICE =================
 const orderSlice = createSlice({
   name: "orders",
   initialState,
   reducers: {
-    // ================= SET ORDERS =================
     setOrders: (state, action) => {
       const { orders = [], pagination = null } = action.payload;
       
       state.orders = orders;
       
-      // Calculate stats from orders
       const stats = calculateOrderStats(orders);
       
       state.totalOrders = stats.total;
@@ -147,7 +141,6 @@ const orderSlice = createSlice({
       state.totalSpent = stats.totalSpent;
       state.stats = stats;
       
-      // Update pagination if provided
       if (pagination) {
         state.pagination = {
           ...state.pagination,
@@ -157,16 +150,14 @@ const orderSlice = createSlice({
         };
       }
       
-      // Save stats to localStorage
       saveStatsToLocalStorage(stats);
     },
     
-    // ================= ADD ORDER =================
     addOrder: (state, action) => {
       const order = action.payload;
       state.orders.unshift(order);
       
-      // Update stats
+    
       const status = getOrderStatus(order);
       const total = getOrderTotal(order);
       
@@ -203,7 +194,6 @@ const orderSlice = createSlice({
       saveStatsToLocalStorage(state.stats);
     },
     
-    // ================= UPDATE ORDER =================
     updateOrder: (state, action) => {
       const { orderId, updates } = action.payload;
       const index = state.orders.findIndex((order) => order._id === orderId);
@@ -214,12 +204,11 @@ const orderSlice = createSlice({
         const newStatus = updates.status || updates.orderStatus || oldStatus;
         const newTotal = updates.totalAmount || updates.total || oldTotal;
         
-        // Update the order
+      
         state.orders[index] = { ...state.orders[index], ...updates };
         
-        // Update stats if status changed
         if (oldStatus !== newStatus) {
-          // Remove old status
+  
           switch (oldStatus) {
             case ORDER_STATUSES.PENDING:
               state.pendingOrders--;
@@ -247,7 +236,6 @@ const orderSlice = createSlice({
               break;
           }
           
-          // Add new status
           switch (newStatus) {
             case ORDER_STATUSES.PENDING:
               state.pendingOrders++;
@@ -281,7 +269,7 @@ const orderSlice = createSlice({
       }
     },
     
-    // ================= BULK UPDATE ORDERS =================
+   
     bulkUpdateOrders: (state, action) => {
       const { orderIds, updates } = action.payload;
       
@@ -292,7 +280,6 @@ const orderSlice = createSlice({
         }
       });
       
-      // Recalculate all stats
       const stats = calculateOrderStats(state.orders);
       state.totalOrders = stats.total;
       state.pendingOrders = stats.pending;
@@ -306,17 +293,16 @@ const orderSlice = createSlice({
       saveStatsToLocalStorage(stats);
     },
     
-    // ================= SET CURRENT ORDER =================
+   
     setCurrentOrder: (state, action) => {
       state.currentOrder = action.payload;
     },
     
-    // ================= CLEAR CURRENT ORDER =================
+
     clearCurrentOrder: (state) => {
       state.currentOrder = null;
     },
     
-    // ================= REMOVE ORDER =================
     removeOrder: (state, action) => {
       const orderId = action.payload;
       const orderIndex = state.orders.findIndex((order) => order._id === orderId);
@@ -326,7 +312,6 @@ const orderSlice = createSlice({
         const status = getOrderStatus(order);
         const total = getOrderTotal(order);
         
-        // Update counts
         state.totalOrders--;
         
         switch (status) {
@@ -356,7 +341,7 @@ const orderSlice = createSlice({
             break;
         }
         
-        // Remove order
+
         state.orders = state.orders.filter((order) => order._id !== orderId);
         
         state.stats.total = state.totalOrders;
@@ -364,7 +349,6 @@ const orderSlice = createSlice({
       }
     },
     
-    // ================= FILTER ORDERS =================
     setOrderFilter: (state, action) => {
       const { filterType, value } = action.payload;
       state.filters[filterType] = value;
@@ -379,7 +363,6 @@ const orderSlice = createSlice({
       };
     },
     
-    // ================= PAGINATION =================
     setPagination: (state, action) => {
       state.pagination = {
         ...state.pagination,
@@ -393,7 +376,6 @@ const orderSlice = createSlice({
       state.pagination.currentPage = action.payload;
     },
     
-    // ================= UI STATES =================
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -406,7 +388,6 @@ const orderSlice = createSlice({
       state.error = null;
     },
     
-    // ================= CLEAR ORDERS =================
     clearOrders: (state) => {
       state.orders = [];
       state.currentOrder = null;
@@ -430,7 +411,7 @@ const orderSlice = createSlice({
       localStorage.removeItem(STORAGE_KEY);
     },
     
-    // ================= SYNC WITH BACKEND =================
+
     syncOrders: (state, action) => {
       const { orders, stats, pagination } = action.payload;
       
@@ -457,7 +438,7 @@ const orderSlice = createSlice({
   },
 });
 
-// ================= EXPORT ACTIONS =================
+
 export const {
   setOrders,
   addOrder,
@@ -477,7 +458,7 @@ export const {
   syncOrders,
 } = orderSlice.actions;
 
-// ================= SELECTORS =================
+
 export const selectAllOrders = (state) => state.orders?.orders || [];
 export const selectCurrentOrder = (state) => state.orders?.currentOrder || null;
 export const selectOrderStats = (state) => state.orders?.stats || {};
@@ -486,7 +467,7 @@ export const selectOrderError = (state) => state.orders?.error || null;
 export const selectPagination = (state) => state.orders?.pagination || {};
 export const selectFilters = (state) => state.orders?.filters || {};
 
-// ================= FILTERED SELECTORS =================
+
 export const selectFilteredOrders = (state) => {
   const orders = selectAllOrders(state);
   const filters = selectFilters(state);
@@ -494,14 +475,14 @@ export const selectFilteredOrders = (state) => {
   
   let filtered = [...orders];
   
-  // Filter by status
+  
   if (status && status !== "all") {
     filtered = filtered.filter(
       (order) => getOrderStatus(order) === status
     );
   }
   
-  // Filter by date range
+
   if (startDate) {
     filtered = filtered.filter(
       (order) => new Date(order.createdAt) >= new Date(startDate)
@@ -514,7 +495,7 @@ export const selectFilteredOrders = (state) => {
     );
   }
   
-  // Filter by search (order ID or customer name)
+
   if (search) {
     const searchLower = search.toLowerCase();
     filtered = filtered.filter(
@@ -529,7 +510,7 @@ export const selectFilteredOrders = (state) => {
   return filtered;
 };
 
-// ================= STATS SELECTORS =================
+
 export const selectOrdersByStatus = (status) => (state) => {
   const orders = selectAllOrders(state);
   return orders.filter((order) => getOrderStatus(order) === status);
@@ -550,7 +531,7 @@ export const selectShippedOrders = (state) =>
 export const selectCancelledOrders = (state) => 
   selectOrdersByStatus(ORDER_STATUSES.CANCELLED)(state);
 
-// ================= ORDER SPECIFIC SELECTORS =================
+
 export const selectOrderById = (orderId) => (state) => {
   const orders = selectAllOrders(state);
   return orders.find((order) => order._id === orderId) || null;
@@ -576,7 +557,7 @@ export const selectOrdersSummary = (state) => ({
 export const selectHasOrders = (state) => (state.orders?.totalOrders || 0) > 0;
 export const selectOrderCount = (state) => state.orders?.totalOrders || 0;
 
-// ================= HELPER SELECTORS =================
+
 export const selectOrderStatusCounts = (state) => ({
   pending: state.orders?.pendingOrders || 0,
   processing: state.orders?.processingOrders || 0,
@@ -585,8 +566,8 @@ export const selectOrderStatusCounts = (state) => ({
   cancelled: state.orders?.cancelledOrders || 0,
 });
 
-// ================= EXPORT CONSTANTS =================
+
 export { ORDER_STATUSES, ORDER_STATUS_LIST };
 
-// ================= DEFAULT EXPORT =================
+
 export default orderSlice.reducer;

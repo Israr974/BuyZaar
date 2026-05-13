@@ -238,7 +238,7 @@ export async function userLogin(req, res) {
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password required",
+        message: "Email and password are required",
         error: true,
         success: false,
       });
@@ -246,8 +246,8 @@ export async function userLogin(req, res) {
 
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.status(400).json({
-        message: "Invalid email or password",
+      return res.status(401).json({
+        message: "No account found with this email address",
         error: true,
         success: false,
       });
@@ -263,8 +263,8 @@ export async function userLogin(req, res) {
 
     const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid email or password",
+      return res.status(401).json({
+        message: "Incorrect password. Please try again.",
         error: true,
         success: false,
       });
@@ -302,13 +302,25 @@ export async function userLogin(req, res) {
       updatedAt: user.updatedAt,
     };
 
+    if (!user.verify_email) {
+      return res.status(200).json({
+        message: "Login successful! Please verify your email to access all features.",
+        success: true,
+        error: false,
+        requiresEmailVerification: true,
+        data: {
+          user: userData,
+          accessToken,
+          refreshToken,
+        },
+      });
+    }
+
     return res.status(200).json({
-      message: user.verify_email 
-        ? "Login successful" 
-        : "Login successful! Please verify your email to access all features.",
+      message: "Login successful",
       success: true,
       error: false,
-      requiresEmailVerification: !user.verify_email,
+      requiresEmailVerification: false,
       data: {
         user: userData,
         accessToken,
@@ -684,7 +696,7 @@ export const deleteAccount = async (req, res) => {
         const publicId = user.profile.split('/').slice(-2).join('/').split('.')[0];
         await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        // Silently handle Cloudinary errors
+        console.log(err)
       }
     }
     

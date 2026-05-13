@@ -61,7 +61,7 @@ export const getAddresses = async (req, res) => {
 
 export const getAddressById = async (req, res) => {
   try {
-    const { id } = req.params; // Changed from body to params (REST convention)
+    const { id } = req.params; 
     const userId = req.user.id;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {

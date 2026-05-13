@@ -25,6 +25,7 @@ import summaryApi from "../common/summartApi";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import ConfirmBox from "../components/ConfirmBox";
+import { calculateDiscountedPrice, formatPrice } from "../utils/priceUtils";
 
 const Orders = () => {
   const user = useSelector((state) => state.user);
@@ -217,9 +218,21 @@ const Orders = () => {
     if (order.totalAmount) return order.totalAmount;
     if (order.total) return order.total;
     if (order.items) {
-      return order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+      return order.items.reduce((sum, item) => {
+        const price = item.discountedPrice || item.priceAtTime || item.price || 0;
+        return sum + (price * (item.quantity || 1));
+      }, 0);
     }
     return 0;
+  };
+
+  const getItemDisplayPrice = (item) => {
+    const price = item.discountedPrice || item.priceAtTime || item.price || 0;
+    const discount = item.discount || 0;
+    if (discount > 0) {
+      return calculateDiscountedPrice(price, discount);
+    }
+    return price;
   };
 
   const getUserName = (order) => {
@@ -251,51 +264,46 @@ const Orders = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg p-3 md:p-6 fade-in">
-      <div className="container-narrow">
-        {/* Header Section */}
+    <div className="min-h-screen bg-gray-50 p-3 md:p-6">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-4 md:mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-6 md:h-8 rounded-full bg-gradient-to-b from-primary to-accent"></div>
-            <h1 className="text-xl md:text-3xl font-display font-bold text-text">
+            <div className="w-1 h-6 md:h-8 rounded-full bg-gradient-to-b from-blue-600 to-orange-500"></div>
+            <h1 className="text-xl md:text-3xl font-bold text-gray-800">
               Order Management
             </h1>
           </div>
-          <p className="text-text-muted text-sm ml-4">
+          <p className="text-gray-500 text-sm ml-4">
             View and manage all customer orders
           </p>
         </div>
-
-        {/* Stats Cards - Responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-          <div className="bg-card rounded-xl border border-border p-3 md:p-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-text-muted text-xs md:text-sm">Total</p>
-                <p className="text-base md:text-2xl font-bold gradient-text">{stats.total}</p>
+                <p className="text-gray-500 text-xs md:text-sm">Total</p>
+                <p className="text-base md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">{stats.total}</p>
               </div>
-              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <ShoppingBag className="w-3.5 h-3.5 md:w-6 md:h-6 text-primary" />
+              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <ShoppingBag className="w-3.5 h-3.5 md:w-6 md:h-6 text-blue-600" />
               </div>
             </div>
           </div>
-          
-          <div className="bg-card rounded-xl border border-border p-3 md:p-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-text-muted text-xs md:text-sm">Pending</p>
-                <p className="text-base md:text-2xl font-bold text-warning">{stats.pending}</p>
+                <p className="text-gray-500 text-xs md:text-sm">Pending</p>
+                <p className="text-base md:text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
-              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-warning/10 flex items-center justify-center">
-                <Clock className="w-3.5 h-3.5 md:w-6 md:h-6 text-warning" />
+              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Clock className="w-3.5 h-3.5 md:w-6 md:h-6 text-yellow-600" />
               </div>
             </div>
           </div>
-          
-          <div className="bg-card rounded-xl border border-border p-3 md:p-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-text-muted text-xs md:text-sm">Shipped</p>
+                <p className="text-gray-500 text-xs md:text-sm">Shipped</p>
                 <p className="text-base md:text-2xl font-bold text-purple-600">{stats.shipped}</p>
               </div>
               <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-purple-100 flex items-center justify-center">
@@ -303,49 +311,45 @@ const Orders = () => {
               </div>
             </div>
           </div>
-          
-          <div className="bg-card rounded-xl border border-border p-3 md:p-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-text-muted text-xs md:text-sm">Revenue</p>
-                <p className="text-xs md:text-2xl font-bold text-success">₹{(stats.revenue / 1000).toFixed(1)}k</p>
+                <p className="text-gray-500 text-xs md:text-sm">Revenue</p>
+                <p className="text-xs md:text-2xl font-bold text-green-600">{formatPrice(stats.revenue)}</p>
               </div>
-              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-success/10 flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5 md:w-6 md:h-6 text-success" />
+              <div className="w-7 h-7 md:w-12 md:h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5 md:w-6 md:h-6 text-green-600" />
               </div>
             </div>
           </div>
         </div>
-
-        {/* Search and Filters - Mobile Friendly */}
-        <div className="bg-card rounded-xl border border-border p-3 md:p-5 mb-4 md:mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-5 mb-4 md:mb-6">
           <div className="flex flex-col gap-3">
-            {/* Search Bar */}
+      
             <div className="relative">
-             
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search orders..."
+                placeholder="Search orders by ID, customer name, or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="input pl-9 pr-3 py-1.5 md:py-2 w-full text-sm"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
             
-            {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowMobileFilters(!showMobileFilters)}
-                  className={`btn-outline px-2 py-1 rounded-lg flex items-center gap-1 text-xs ${
-                    getActiveFiltersCount() > 0 ? "bg-primary/10 text-primary border-primary" : ""
+                  className={`border border-gray-300 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm ${
+                    getActiveFiltersCount() > 0 ? "bg-blue-50 text-blue-600 border-blue-300" : ""
                   }`}
                 >
-                  <Filter size={12} />
+                  <Filter size={14} />
                   <span>Filter</span>
                   {getActiveFiltersCount() > 0 && (
-                    <span className="text-[10px] bg-primary text-white px-1 py-0.5 rounded-full">
+                    <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full">
                       {getActiveFiltersCount()}
                     </span>
                   )}
@@ -353,29 +357,26 @@ const Orders = () => {
                 
                 <button
                   onClick={handleSearch}
-                  className="btn-primary px-2 py-1 rounded-lg flex items-center gap-1 text-xs"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm"
                 >
-                  <RefreshCw size={12} />
+                  <RefreshCw size={14} />
                   Apply
                 </button>
-              </div>
-              
-              <button className="btn-outline px-2 py-1 rounded-lg flex items-center gap-1 text-xs">
-                <Download size={12} />
+              </div> 
+              <button className="border border-gray-300 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm hover:border-blue-600 hover:text-blue-600 transition">
+                <Download size={14} />
                 <span className="hidden sm:inline">Export</span>
               </button>
             </div>
-            
-            {/* Mobile Filter Panel */}
             {showMobileFilters && (
-              <div className="mt-2 p-2 bg-bg-alt rounded-lg border border-border">
-                <div className="space-y-2">
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-medium text-text mb-1 block">Status</label>
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">Status</label>
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="input py-1 text-xs w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     >
                       {statusOptions.map(option => (
                         <option key={option.value} value={option.value}>
@@ -386,11 +387,11 @@ const Orders = () => {
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-medium text-text mb-1 block">Date Range</label>
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">Date Range</label>
                     <select
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      className="input py-1 text-xs w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     >
                       {dateOptions.map(option => (
                         <option key={option.value} value={option.value}>
@@ -400,34 +401,33 @@ const Orders = () => {
                     </select>
                   </div>
                   
-                  <button onClick={clearFilters} className="w-full btn btn-outline py-1 text-xs">
+                  <button onClick={clearFilters} className="w-full border border-gray-300 py-1.5 rounded-lg text-sm hover:bg-gray-100 transition">
                     Clear Filters
                   </button>
                 </div>
               </div>
             )}
             
-            {/* Active Filters */}
             {getActiveFiltersCount() > 0 && (
-              <div className="flex flex-wrap items-center gap-1 mt-1 pt-1 border-t border-border">
-                <span className="text-[10px] text-text-muted">Active:</span>
+              <div className="flex flex-wrap items-center gap-2 mt-1 pt-2 border-t border-gray-200">
+                <span className="text-xs text-gray-500">Active:</span>
                 {search && (
-                  <span className="badge bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] rounded-full flex items-center gap-1">
-                    "{search.slice(0,8)}"
-                    <button onClick={() => setSearch("")} className="hover:text-error">
-                      <XCircle size={8} />
+                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 text-xs rounded-full flex items-center gap-1">
+                    "{search.slice(0, 10)}"
+                    <button onClick={() => setSearch("")} className="hover:text-red-600">
+                      <XCircle size={10} />
                     </button>
                   </span>
                 )}
                 {statusFilter !== "all" && (
-                  <span className="badge bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] rounded-full">
+                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 text-xs rounded-full flex items-center gap-1">
                     {statusFilter}
-                    <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-error">
-                      <XCircle size={8} />
+                    <button onClick={() => setStatusFilter("all")} className="hover:text-red-600">
+                      <XCircle size={10} />
                     </button>
                   </span>
                 )}
-                <button onClick={clearFilters} className="text-[10px] text-primary hover:underline">
+                <button onClick={clearFilters} className="text-xs text-blue-600 hover:underline">
                   Clear all
                 </button>
               </div>
@@ -435,31 +435,30 @@ const Orders = () => {
           </div>
         </div>
 
-        {/* Orders Table - Horizontal Scroll on Mobile */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="p-4 md:p-8">
               <div className="space-y-2 md:space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-12 md:h-16 bg-bg-alt rounded-lg animate-pulse"></div>
+                  <div key={i} className="h-12 md:h-16 bg-gray-100 rounded-lg animate-pulse"></div>
                 ))}
               </div>
             </div>
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 md:py-16 text-center">
-              <div className="w-12 h-12 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-3 md:mb-4">
-                <ShoppingBag className="w-6 h-6 md:w-12 md:h-12 text-primary/40" />
+              <div className="w-12 h-12 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-blue-100 to-orange-100 flex items-center justify-center mb-3 md:mb-4">
+                <ShoppingBag className="w-6 h-6 md:w-12 md:h-12 text-gray-400" />
               </div>
-              <h3 className="text-sm md:text-xl font-semibold text-text mb-1">
+              <h3 className="text-sm md:text-xl font-semibold text-gray-800 mb-1">
                 No orders found
               </h3>
-              <p className="text-text-muted text-xs md:text-sm mb-3 md:mb-4 max-w-md">
+              <p className="text-gray-500 text-xs md:text-sm mb-3 md:mb-4 max-w-md">
                 {search || statusFilter !== 'all' || dateFilter !== 'all'
                   ? 'Try adjusting your search or filter criteria'
                   : 'No orders have been placed yet'}
               </p>
               {(search || statusFilter !== 'all' || dateFilter !== 'all') && (
-                <button onClick={clearFilters} className="btn btn-primary text-xs">
+                <button onClick={clearFilters} className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-2 rounded-lg text-sm">
                   Clear Filters
                 </button>
               )}
@@ -467,15 +466,15 @@ const Orders = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] md:min-w-full">
-                <thead className="bg-bg-alt">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Order ID</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Customer</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Date</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Items</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Total</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Status</th>
-                    <th className="text-left p-2 md:p-4 font-semibold text-text-muted text-[10px] md:text-sm">Actions</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Order ID</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Customer</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Date</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Items</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Total</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Status</th>
+                    <th className="text-left p-3 md:p-4 font-semibold text-gray-600 text-xs md:text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -487,87 +486,86 @@ const Orders = () => {
                     const orderId = order.orderNumber || order._id;
                     
                     return (
-                      <tr key={order._id} className="border-b border-border hover:bg-bg-alt/50 transition-colors">
-                        <td className="p-2 md:p-4">
-                          <div className="font-mono text-[10px] md:text-sm font-semibold text-primary">
-                            #{orderId?.slice(-6)}
+                      <tr key={order._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td className="p-3 md:p-4">
+                          <div className="font-mono text-xs md:text-sm font-semibold text-blue-600">
+                            #{orderId?.slice(-8)}
                           </div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className="flex items-center gap-1 md:gap-3">
-                            <div className="h-6 w-6 md:h-8 md:w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User size={12} className="md:w-4 md:h-4 text-primary" />
+                        <td className="p-3 md:p-4">
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <div className="h-6 w-6 md:h-8 md:w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                              <User size={12} className="md:w-4 md:h-4 text-blue-600" />
                             </div>
                             <div>
-                              <div className="font-medium text-[10px] md:text-sm">{getUserName(order)}</div>
-                              <div className="text-[8px] md:text-xs text-text-muted hidden md:block">{getUserEmail(order)}</div>
+                              <div className="font-medium text-xs md:text-sm">{getUserName(order)}</div>
+                              <div className="text-xs text-gray-500 hidden md:block">{getUserEmail(order)}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className="text-[10px] md:text-sm">{formatDate(order.createdAt).slice(0, 10)}</div>
+                        <td className="p-3 md:p-4">
+                          <div className="text-xs md:text-sm">{formatDate(order.createdAt).slice(0, 10)}</div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className="text-[10px] md:text-sm">{itemCount}</div>
+                        <td className="p-3 md:p-4">
+                          <div className="text-xs md:text-sm">{itemCount}</div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className="font-bold gradient-text text-[10px] md:text-sm">
-                            ₹{orderTotal.toLocaleString()}
+                        <td className="p-3 md:p-4">
+                          <div className="font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent text-xs md:text-sm">
+                            {formatPrice(orderTotal)}
                           </div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full text-[8px] md:text-xs font-medium border ${getStatusColor(orderStatus)}`}>
+                        <td className="p-3 md:p-4">
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full text-xs font-medium border ${getStatusColor(orderStatus)}`}>
                             <StatusIcon size={10} className="md:w-3 md:h-3" />
-                            <span className="capitalize hidden sm:inline">{orderStatus}</span>
-                            <span className="capitalize sm:hidden">{orderStatus.charAt(0)}</span>
+                            <span className="capitalize">{orderStatus}</span>
                           </div>
                         </td>
-                        <td className="p-2 md:p-4">
-                          <div className="flex items-center gap-0.5 md:gap-1">
+                        <td className="p-3 md:p-4">
+                          <div className="flex items-center gap-1 md:gap-2">
                             <button
                               onClick={() => handleViewOrder(order)}
-                              className="p-1 md:p-1.5 rounded-lg hover:bg-primary/10 transition-colors text-text-muted hover:text-primary"
+                              className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors text-gray-500 hover:text-blue-600"
                               title="View Details"
                             >
-                              <Eye size={12} className="md:w-4 md:h-4" />
+                              <Eye size={14} className="md:w-4 md:h-4" />
                             </button>
                             {orderStatus === 'pending' && (
                               <button
                                 onClick={() => handleUpdateStatus(order._id, 'processing')}
                                 disabled={updatingStatus === order._id}
-                                className="p-1 md:p-1.5 rounded-lg hover:bg-blue-100 transition-colors text-blue-600 disabled:opacity-50"
+                                className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors text-blue-600 disabled:opacity-50"
                                 title="Start Processing"
                               >
-                                <Package size={12} className="md:w-4 md:h-4" />
+                                <Package size={14} className="md:w-4 md:h-4" />
                               </button>
                             )}
                             {orderStatus === 'processing' && (
                               <button
                                 onClick={() => handleUpdateStatus(order._id, 'shipped')}
                                 disabled={updatingStatus === order._id}
-                                className="p-1 md:p-1.5 rounded-lg hover:bg-purple-100 transition-colors text-purple-600 disabled:opacity-50"
+                                className="p-1.5 rounded-lg hover:bg-purple-100 transition-colors text-purple-600 disabled:opacity-50"
                                 title="Mark as Shipped"
                               >
-                                <Truck size={12} className="md:w-4 md:h-4" />
+                                <Truck size={14} className="md:w-4 md:h-4" />
                               </button>
                             )}
                             {orderStatus === 'shipped' && (
                               <button
                                 onClick={() => handleUpdateStatus(order._id, 'delivered')}
                                 disabled={updatingStatus === order._id}
-                                className="p-1 md:p-1.5 rounded-lg hover:bg-green-100 transition-colors text-green-600 disabled:opacity-50"
+                                className="p-1.5 rounded-lg hover:bg-green-100 transition-colors text-green-600 disabled:opacity-50"
                                 title="Mark as Delivered"
                               >
-                                <CheckCircle size={12} className="md:w-4 md:h-4" />
+                                <CheckCircle size={14} className="md:w-4 md:h-4" />
                               </button>
                             )}
                             {orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
                               <button
                                 onClick={() => openCancelConfirm(order._id)}
-                                className="p-1 md:p-1.5 rounded-lg hover:bg-red-100 transition-colors text-red-600"
+                                className="p-1.5 rounded-lg hover:bg-red-100 transition-colors text-red-600"
                                 title="Cancel Order"
                               >
-                                <XCircle size={12} className="md:w-4 md:h-4" />
+                                <XCircle size={14} className="md:w-4 md:h-4" />
                               </button>
                             )}
                           </div>
@@ -581,80 +579,78 @@ const Orders = () => {
           )}
         </div>
 
-        {/* Order Details Modal - Responsive */}
         {showOrderDetails && selectedOrder && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in">
-              <div className="sticky top-0 bg-card border-b border-border p-3 md:p-5 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 md:p-5 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base md:text-xl font-display font-bold text-text">Order Details</h3>
-                  <p className="text-xs md:text-sm text-text-muted">
+                  <h3 className="text-base md:text-xl font-bold text-gray-800">Order Details</h3>
+                  <p className="text-xs md:text-sm text-gray-500">
                     #{selectedOrder.orderNumber || selectedOrder._id?.slice(-8)} • {formatDate(selectedOrder.createdAt)}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowOrderDetails(false)}
-                  className="p-1.5 md:p-2 rounded-lg hover:bg-bg-alt transition-colors text-text-muted hover:text-text"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <XCircle size={16} className="md:w-5 md:h-5" />
+                  <XCircle size={20} />
                 </button>
               </div>
               
-              <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-3 md:p-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 mb-3 md:mb-5">
-                  {/* Customer Information */}
-                  <div className="bg-bg-alt rounded-xl p-3 md:p-4 border border-border">
-                    <h4 className="font-semibold text-text text-sm md:text-base mb-2 md:mb-3 flex items-center gap-2">
-                      <User size={14} className="md:w-4 md:h-4 text-primary" />
+              <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 md:p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
+               
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-3 flex items-center gap-2">
+                      <User size={16} className="text-blue-600" />
                       Customer
                     </h4>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center">
                           <span className="text-white font-bold text-xs md:text-sm">
                             {getUserName(selectedOrder).charAt(0) || 'G'}
                           </span>
                         </div>
                         <div>
-                          <div className="font-medium text-text text-sm md:text-base">{getUserName(selectedOrder)}</div>
-                          <div className="text-xs text-text-muted">{getUserEmail(selectedOrder)}</div>
+                          <div className="font-medium text-gray-800 text-sm md:text-base">{getUserName(selectedOrder)}</div>
+                          <div className="text-xs text-gray-500">{getUserEmail(selectedOrder)}</div>
                         </div>
                       </div>
-                      <div className="mt-2 md:mt-4 pt-2 md:pt-3 border-t border-border">
-                        <div className="grid grid-cols-2 gap-1 md:gap-2 text-xs md:text-sm">
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                           <div>
-                            <p className="text-text-muted">Order #</p>
-                            <p className="text-text font-medium">{selectedOrder.orderNumber || selectedOrder._id?.slice(-8)}</p>
+                            <p className="text-gray-500">Order #</p>
+                            <p className="text-gray-800 font-medium">{selectedOrder.orderNumber || selectedOrder._id?.slice(-8)}</p>
                           </div>
                           <div>
-                            <p className="text-text-muted">Payment</p>
-                            <p className="text-text font-medium">{selectedOrder.payment?.method || 'COD'}</p>
+                            <p className="text-gray-500">Payment</p>
+                            <p className="text-gray-800 font-medium">{selectedOrder.payment?.method || 'COD'}</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Order Summary */}
-                  <div className="bg-bg-alt rounded-xl p-3 md:p-4 border border-border">
-                    <h4 className="font-semibold text-text text-sm md:text-base mb-2 md:mb-3 flex items-center gap-2">
-                      <ShoppingBag size={14} className="md:w-4 md:h-4 text-primary" />
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-3 flex items-center gap-2">
+                      <ShoppingBag size={16} className="text-blue-600" />
                       Summary
                     </h4>
-                    <div className="space-y-1 md:space-y-2">
-                      <div className="flex justify-between text-xs md:text-sm">
-                        <span className="text-text-muted">Subtotal</span>
-                        <span className="text-text">₹{calculateTotal(selectedOrder).toLocaleString()}</span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Subtotal</span>
+                        <span className="text-gray-800">{formatPrice(calculateTotal(selectedOrder))}</span>
                       </div>
-                      <div className="flex justify-between text-xs md:text-sm">
-                        <span className="text-text-muted">Shipping</span>
-                        <span className="text-success">FREE</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Shipping</span>
+                        <span className="text-green-600">FREE</span>
                       </div>
-                      <div className="pt-2 md:pt-3 border-t border-border mt-1 md:mt-2">
+                      <div className="pt-2 border-t border-gray-200 mt-2">
                         <div className="flex justify-between font-bold">
-                          <span className="text-text text-sm md:text-base">Total</span>
-                          <span className="gradient-text text-base md:text-lg">
-                            ₹{calculateTotal(selectedOrder).toLocaleString()}
+                          <span className="text-gray-800 text-sm md:text-base">Total</span>
+                          <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent text-base md:text-lg">
+                            {formatPrice(calculateTotal(selectedOrder))}
                           </span>
                         </div>
                       </div>
@@ -662,64 +658,73 @@ const Orders = () => {
                   </div>
                 </div>
                 
-                {/* Order Items */}
-                <div className="bg-bg-alt rounded-xl p-3 md:p-4 border border-border">
-                  <h4 className="font-semibold text-text text-sm md:text-base mb-2 md:mb-3 flex items-center gap-2">
-                    <Package size={14} className="md:w-4 md:h-4 text-primary" />
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-3 flex items-center gap-2">
+                    <Package size={16} className="text-blue-600" />
                     Items
                   </h4>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[400px]">
-                      <thead className="border-b border-border">
+                      <thead className="border-b border-gray-200">
                         <tr>
-                          <th className="text-left p-2 font-medium text-text-muted text-[10px] md:text-sm">Product</th>
-                          <th className="text-left p-2 font-medium text-text-muted text-[10px] md:text-sm">Qty</th>
-                          <th className="text-left p-2 font-medium text-text-muted text-[10px] md:text-sm">Price</th>
-                          <th className="text-left p-2 font-medium text-text-muted text-[10px] md:text-sm">Total</th>
+                          <th className="text-left p-2 font-medium text-gray-500 text-xs md:text-sm">Product</th>
+                          <th className="text-left p-2 font-medium text-gray-500 text-xs md:text-sm">Qty</th>
+                          <th className="text-left p-2 font-medium text-gray-500 text-xs md:text-sm">Price</th>
+                          <th className="text-left p-2 font-medium text-gray-500 text-xs md:text-sm">Total</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(selectedOrder.items || []).slice(0, 3).map((item, index) => (
-                          <tr key={index} className="border-b border-border">
-                            <td className="p-2">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={item.image || item.productId?.image?.[0] || '/placeholder.png'}
-                                  alt={item.name}
-                                  className="h-8 w-8 md:h-12 md:w-12 rounded-lg object-cover border border-border"
-                                />
-                                <div>
-                                  <div className="font-medium text-text text-xs md:text-sm">{item.name || item.productId?.name}</div>
+                        {(selectedOrder.items || []).map((item, index) => {
+                          const displayPrice = getItemDisplayPrice(item);
+                          const originalPrice = item.price || 0;
+                          const hasDiscount = item.discount > 0 || displayPrice < originalPrice;
+                          
+                          return (
+                            <tr key={index} className="border-b border-gray-200">
+                              <td className="p-2">
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={item.image || item.productId?.image?.[0] || '/placeholder.png'}
+                                    alt={item.name}
+                                    className="h-8 w-8 md:h-12 md:w-12 rounded-lg object-cover border border-gray-200"
+                                  />
+                                  <div>
+                                    <div className="font-medium text-gray-800 text-xs md:text-sm">{item.name || item.productId?.name}</div>
+                                    {hasDiscount && (
+                                      <span className="text-xs text-red-500">-{item.discount || Math.round(((originalPrice - displayPrice) / originalPrice) * 100)}% OFF</span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td className="p-2 text-text text-xs md:text-sm">{item.quantity}</td>
-                            <td className="p-2 text-text text-xs md:text-sm">₹{item.price?.toLocaleString()}</td>
-                            <td className="p-2 font-semibold text-primary text-xs md:text-sm">
-                              ₹{(item.price * item.quantity).toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="p-2 text-gray-800 text-xs md:text-sm">{item.quantity}</td>
+                              <td className="p-2">
+                                <div>
+                                  <span className="text-gray-800 text-xs md:text-sm">{formatPrice(displayPrice)}</span>
+                                  {hasDiscount && (
+                                    <span className="text-xs text-gray-400 line-through ml-1">{formatPrice(originalPrice)}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-2 font-semibold text-blue-600 text-xs md:text-sm">
+                                {formatPrice(displayPrice * item.quantity)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
-                    {selectedOrder.items?.length > 3 && (
-                      <p className="text-center text-text-muted text-xs mt-2">
-                        + {selectedOrder.items.length - 3} more items
-                      </p>
-                    )}
                   </div>
                 </div>
                 
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-2 md:gap-3 mt-3 md:mt-5 pt-3 md:pt-4 border-t border-border">
+                <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => setShowOrderDetails(false)}
-                    className="btn-outline px-3 md:px-5 py-1 md:py-2 rounded-lg text-xs md:text-sm"
+                    className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition"
                   >
                     Close
                   </button>
-                  <button className="btn-primary px-3 md:px-5 py-1 md:py-2 rounded-lg flex items-center gap-1 md:gap-2 text-xs md:text-sm">
-                    <Printer size={14} className="md:w-4 md:h-4" />
+                  <button className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:shadow-lg transition">
+                    <Printer size={14} />
                     Print
                   </button>
                 </div>
@@ -729,7 +734,6 @@ const Orders = () => {
         )}
       </div>
 
-      {/* Cancel Order Confirmation Modal */}
       {showCancelConfirm && (
         <ConfirmBox
           title="Cancel Order"

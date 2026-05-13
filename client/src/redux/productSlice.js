@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// ================= CONSTANTS =================
+
 const STORAGE_KEY = "product_filters";
 const DEFAULT_LIMIT = 12;
 const DEFAULT_SORT = "newest";
@@ -23,7 +23,7 @@ const SORT_LABELS = {
   [SORT_OPTIONS.DISCOUNT]: "Best Discount",
 };
 
-// ================= HELPER FUNCTIONS =================
+
 const saveFiltersToLocalStorage = (filters) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
@@ -66,15 +66,13 @@ const sortProducts = (products, sortBy) => {
 
 const filterProducts = (products, filters) => {
   let filtered = [...products];
-  
-  // Filter by category
+
   if (filters.category) {
     filtered = filtered.filter(
       (product) => product.category?._id === filters.category || product.category === filters.category
     );
   }
   
-  // Filter by subcategory
   if (filters.subCategory) {
     filtered = filtered.filter(
       (product) =>
@@ -82,7 +80,7 @@ const filterProducts = (products, filters) => {
     );
   }
   
-  // Filter by price range
+ 
   if (filters.minPrice !== null && filters.minPrice !== "") {
     filtered = filtered.filter((product) => (product.price || 0) >= Number(filters.minPrice));
   }
@@ -90,12 +88,10 @@ const filterProducts = (products, filters) => {
     filtered = filtered.filter((product) => (product.price || 0) <= Number(filters.maxPrice));
   }
   
-  // Filter by stock
   if (filters.inStock) {
     filtered = filtered.filter((product) => (product.stock || 0) > 0);
   }
-  
-  // Filter by search
+ 
   if (filters.search) {
     const searchLower = filters.search.toLowerCase();
     filtered = filtered.filter(
@@ -109,7 +105,7 @@ const filterProducts = (products, filters) => {
   return filtered;
 };
 
-// ================= INITIAL STATE =================
+
 const getInitialFilters = () => {
   const savedFilters = loadFiltersFromLocalStorage();
   return savedFilters || {
@@ -133,6 +129,8 @@ const initialState = {
   filteredProducts: [],
   currentProduct: null,
   featuredProducts: [],
+  flashSaleProducts: [],      
+  flashSaleLoading: false,
   recentProducts: [],
   popularProducts: [],
   relatedProducts: [],
@@ -149,12 +147,11 @@ const initialState = {
   },
 };
 
-// ================= SLICE =================
 const productSlice = createSlice({
   name: "product",
   initialState,
   reducers: {
-    // ================= CATEGORY REDUCERS =================
+   
     setAllCategory: (state, action) => {
       state.allCategory = [...action.payload];
     },
@@ -177,8 +174,7 @@ const productSlice = createSlice({
     removeCategory: (state, action) => {
       state.allCategory = state.allCategory.filter((cat) => cat._id !== action.payload);
     },
-    
-    // ================= SUBCATEGORY REDUCERS =================
+
     setSubCategory: (state, action) => {
       state.subCategory = [...action.payload];
     },
@@ -198,16 +194,14 @@ const productSlice = createSlice({
       state.subCategory = state.subCategory.filter((sub) => sub._id !== action.payload);
     },
     
-    // ================= PRODUCT REDUCERS =================
     setProducts: (state, action) => {
       const products = action.payload;
       state.products = products;
       
-      // Apply current filters and sorting
+
       const filtered = filterProducts(products, state.filters);
       state.filteredProducts = sortProducts(filtered, state.filters.sortBy);
-      
-      // Update pagination total
+
       state.pagination.total = state.filteredProducts.length;
       state.pagination.totalPages = Math.ceil(state.filteredProducts.length / state.pagination.limit);
     },
@@ -232,8 +226,7 @@ const productSlice = createSlice({
       const index = state.products.findIndex((prod) => prod._id === action.payload._id);
       if (index !== -1) {
         state.products[index] = action.payload;
-        
-        // Reapply filters
+
         const filtered = filterProducts(state.products, state.filters);
         state.filteredProducts = sortProducts(filtered, state.filters.sortBy);
       }
@@ -254,7 +247,7 @@ const productSlice = createSlice({
       }
     },
     
-    // ================= FEATURED PRODUCTS =================
+
     setFeaturedProducts: (state, action) => {
       state.featuredProducts = [...action.payload];
     },
@@ -271,16 +264,16 @@ const productSlice = createSlice({
       state.relatedProducts = [...action.payload];
     },
     
-    // ================= FILTERS =================
+   
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
       saveFiltersToLocalStorage(state.filters);
       
-      // Reapply filters to products
+ 
       const filtered = filterProducts(state.products, state.filters);
       state.filteredProducts = sortProducts(filtered, state.filters.sortBy);
       
-      // Reset to first page when filters change
+ 
       state.pagination.page = 1;
       state.pagination.total = state.filteredProducts.length;
       state.pagination.totalPages = Math.ceil(state.filteredProducts.length / state.pagination.limit);
@@ -300,7 +293,7 @@ const productSlice = createSlice({
       };
       saveFiltersToLocalStorage(state.filters);
       
-      // Reset products to unfiltered
+
       state.filteredProducts = sortProducts([...state.products], DEFAULT_SORT);
       state.pagination.page = 1;
       state.pagination.total = state.filteredProducts.length;
@@ -380,7 +373,6 @@ const productSlice = createSlice({
       state.pagination.page = 1;
     },
     
-    // ================= PAGINATION =================
     setPagination: (state, action) => {
       state.pagination = { ...state.pagination, ...action.payload };
       state.pagination.hasNext = state.pagination.page < state.pagination.totalPages;
@@ -417,8 +409,7 @@ const productSlice = createSlice({
         hasPrev: false,
       };
     },
-    
-    // ================= LOADING & ERROR STATES =================
+
     setProductsLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -431,10 +422,8 @@ const productSlice = createSlice({
       state.error = null;
     },
     
-    // ================= RESET STATE =================
     resetProductState: () => initialState,
-    
-    // ================= SYNC WITH BACKEND =================
+
     syncProducts: (state, action) => {
       const { products, filters, pagination } = action.payload;
       
@@ -455,25 +444,33 @@ const productSlice = createSlice({
         state.pagination = { ...state.pagination, ...pagination };
       }
     },
+
+ 
+setFlashSaleProducts: (state, action) => {
+  state.flashSaleProducts = action.payload;
+},
+
+setFlashSaleLoading: (state, action) => {
+  state.flashSaleLoading = action.payload;
+},
   },
 });
 
-// ================= EXPORT ACTIONS =================
 export const {
-  // Category actions
+ 
   setAllCategory,
   setLoadingCategory,
   addCategory,
   updateCategory,
   removeCategory,
   
-  // SubCategory actions
+
   setSubCategory,
   addSubCategory,
   updateSubCategory,
   removeSubCategory,
   
-  // Product actions
+
   setProducts,
   setCurrentProduct,
   clearCurrentProduct,
@@ -481,13 +478,13 @@ export const {
   updateProduct,
   removeProduct,
   
-  // Featured products
+ 
   setFeaturedProducts,
   setRecentProducts,
   setPopularProducts,
   setRelatedProducts,
   
-  // Filter actions
+
   setFilters,
   clearFilters,
   setSortBy,
@@ -499,24 +496,27 @@ export const {
   setRatingFilter,
   toggleInStockFilter,
   
-  // Pagination actions
+ 
   setPagination,
   setPage,
   setLimit,
   setTotalProducts,
   resetPagination,
   
-  // Loading and Error actions
+  
   setProductsLoading,
   setProductsError,
   clearError,
-  
-  // Reset and Sync
+
   resetProductState,
   syncProducts,
+
+
+  setFlashSaleProducts,    
+  setFlashSaleLoading, 
 } = productSlice.actions;
 
-// ================= SELECTORS =================
+
 export const selectAllCategories = (state) => state.product?.allCategory || [];
 export const selectSubCategories = (state) => state.product?.subCategory || [];
 export const selectAllProducts = (state) => state.product?.products || [];
@@ -532,7 +532,7 @@ export const selectProductError = (state) => state.product?.error || null;
 export const selectProductFilters = (state) => state.product?.filters || {};
 export const selectProductPagination = (state) => state.product?.pagination || {};
 
-// ================= DERIVED SELECTORS =================
+
 export const selectPaginatedProducts = (state) => {
   const products = selectFilteredProducts(state);
   const { page, limit } = selectProductPagination(state);
@@ -617,8 +617,6 @@ export const selectActiveFiltersCount = (state) => {
   return count;
 };
 
-// ================= EXPORT CONSTANTS =================
 export { SORT_OPTIONS, SORT_LABELS, DEFAULT_LIMIT, DEFAULT_SORT };
 
-// ================= DEFAULT EXPORT =================
 export default productSlice.reducer;

@@ -23,7 +23,7 @@ const verifyEmail = ({ name, url }) => {
             </a>
           </div>
           
-          <p style="font-size: 14px; color: #666666;">⚠️ This link will expire in 24 hours.</p>
+          <p style="font-size: 14px; color: #666666;"> This link will expire in 24 hours.</p>
           <p style="font-size: 14px; color: #666666;">If you did not register on BuyZaar, please ignore this email.</p>
         </div>
         

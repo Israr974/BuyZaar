@@ -10,13 +10,11 @@ if (!process.env.MONGODB_URI) {
 async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
   } catch (error) {
-    // Log to error tracking service in production instead of console
+  
     console.error("MongoDB connection failed:", error.message);
-    throw error; // Throw instead of exiting to let app handle graceful shutdown
+    throw error; 
   }
 }
 

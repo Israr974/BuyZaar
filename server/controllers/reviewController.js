@@ -234,3 +234,20 @@ export const markHelpful = async (req, res) => {
     });
   }
 };
+
+export const getAllReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ status: "approved" })
+      .populate('user', 'name')
+      .populate('product', 'name image')
+      .sort({ createdAt: -1 })
+      .limit(10);
+    
+    return res.status(200).json({
+      success: true,
+      data: reviews
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

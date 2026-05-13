@@ -74,7 +74,7 @@ export const addToCart = async (req, res) => {
         await user.save();
       }
     } catch (userUpdateError) {
-      // Log to error tracking service in production
+      
     }
 
     return res.status(200).json({

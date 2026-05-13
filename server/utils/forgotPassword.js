@@ -22,7 +22,7 @@ const forgotPasswordOtp = ({ name, otp }) => {
             </div>
           </div>
           
-          <p style="font-size: 14px; color: #666666;">⚠️ This OTP is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
+          <p style="font-size: 14px; color: #666666;"> This OTP is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
           <p style="font-size: 14px; color: #666666;">If you didn't request this, please ignore this email.</p>
         </div>
         
