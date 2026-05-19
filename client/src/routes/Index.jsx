@@ -38,7 +38,7 @@ import ReturnPolicy from "../pages/ReturnPolicy";
 import ShippingInfo from "../pages/ShippingInfo";
 import Setting from "../pages/Setting"
 import HelpCenter from "../pages/HelpCenter"
-import FlashSalePage from "../pages/FlashSalePage";
+
 
 const ROUTES = {
 
@@ -106,7 +106,6 @@ const productRoutes = [
     { path: ":subcategory", element: <ProductList /> },
     
   ]},
-  {path:"/flash-sale", element:<FlashSalePage />}
 ];
 
 const checkoutRoutes = [

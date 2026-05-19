@@ -121,16 +121,16 @@ const Header = () => {
   );
 
   const MobileLogo = () => (
-    <h1 className="text-sm font-black tracking-wide flex items-center">
-      <span className="px-2 py-0.5 rounded-xl bg-blue-700 text-white shadow-lg">
-        Buy
-      </span>
-      <span className="ml-1.5 text-orange-400 relative">
-        Zaar
-        <span className="absolute left-0 -bottom-0.5 h-[2px] w-full bg-orange-400 rounded-full"></span>
-      </span>
-    </h1>
-  );
+  <h1 className="text-lg font-black tracking-wide flex items-center">
+    <span className="px-3 py-1 rounded-xl bg-blue-700 text-white shadow-lg">
+      Buy
+    </span>
+    <span className="ml-1.5 text-orange-400 relative">
+      Zaar
+      <span className="absolute left-0 -bottom-0.5 h-[2px] w-full bg-orange-400 rounded-full"></span>
+    </span>
+  </h1>
+);
 
   return (
     <>
@@ -280,7 +280,7 @@ const Header = () => {
             </div>
           </div>
         ) : (
-          <div className="px-3 py-2">
+          <div className="px-3 py-5">
             <div className="flex items-center justify-between gap-2 mb-2">
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -348,7 +348,6 @@ const Header = () => {
             <div className="mt-3 overflow-x-auto pb-2 hide-scrollbar">
               <div className="flex items-center gap-2 min-w-max bg-blue-600 rounded-lg px-2 py-1.5">
                 <Link
-                  to="/flash-sale"
                   className="px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold shadow-md"
                 >
                   SALE
