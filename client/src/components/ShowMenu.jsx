@@ -16,24 +16,28 @@ const ShowMenu = ({ user, onClose, isMobile = false, wishlistCount = 0 }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isAdmin = IsAdmin(user?.role);
-
+const currentYear = new Date().getFullYear();
   const handleNavigation = (path) => {
     navigate(path);
     onClose?.();
   };
 
   const handleLogout = async () => {
-    try {
-      await Axios(summaryApi().logout).catch(() => {});
-    } catch (error) {
-      AxiosError(error);
-    } finally {
-      dispatch(logout());
-      toast.success("Logged out successfully");
-      navigate("/login", { replace: true });
-      onClose?.();
-    }
-  };
+  try {
+    await Axios(summaryApi().logout).catch(() => {});
+  } catch (error) {
+    AxiosError(error);
+  } finally {
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    dispatch(logout());
+    
+    toast.success("Logged out successfully");
+    navigate("/login", { replace: true });
+    onClose?.();
+  }
+};
 
   if (!user) return null;
 
@@ -175,7 +179,7 @@ const ShowMenu = ({ user, onClose, isMobile = false, wishlistCount = 0 }) => {
             <button onClick={() => handleNavigation("/terms")} className="hover:text-blue-600">Terms</button>
           </div>
           <p className="text-center text-xs text-gray-500 mt-3">
-            © 2024 BuyZaar. All rights reserved.
+            {currentYear} BuyZaar. All rights reserved.
           </p>
         </div>
       )}

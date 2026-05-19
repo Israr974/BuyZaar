@@ -63,22 +63,30 @@ const GlobalProvider = ({ children }) => {
     }
   }, [dispatch]);
 
-  const fetchCart = useCallback(async () => {
-    try {
-      updateLoadingState('cart', true);
-      const res = await Axios({ ...summaryApi().getCartProducts });
-      if (res.data?.success) {
-        dispatch(setCartItems(res.data.data));
-      } else {
-        dispatch(clearCart());
-      }
-    } catch (err) {
-    AxiosError(err);
+  
+const fetchCart = useCallback(async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    dispatch(clearCart());
+    updateLoadingState('cart', false);
+    return;
+  }
+
+  try {
+    updateLoadingState('cart', true);
+    const res = await Axios({ ...summaryApi().getCartProducts });
+    if (res.data?.success) {
+      dispatch(setCartItems(res.data.data));
+    } else {
       dispatch(clearCart());
-    } finally {
-      updateLoadingState('cart', false);
     }
-  }, [dispatch]);
+  } catch (err) {
+    dispatch(clearCart());
+  } finally {
+    updateLoadingState('cart', false);
+  }
+}, [dispatch]);
+
 
   const fetchWishlist = useCallback(async () => {
     try {
@@ -108,37 +116,42 @@ const GlobalProvider = ({ children }) => {
   }, [dispatch]);
 
   const fetchUser = useCallback(async () => {
-    try {
-      updateLoadingState('user', true);
-      const userData = await fetchUserDetails();
+  const token = localStorage.getItem("token");
+  if (!token) {
+    dispatch(setUser(null));
+    updateLoadingState('user', false);
+    return;
+  }
 
-      if (userData && Object.keys(userData).length > 0) {
-        dispatch(
-          setUser({
-            id: userData.id || userData._id || "",
-            name: userData.name || "",
-            email: userData.email || "",
-            mobile: userData.mobile || "",
-            role: userData.role || "user",
-            status: userData.status || "active",
-            address_details: userData.address_details || [],
-            orderHistory: userData.orderHistory || [],
-            shopping_cart: userData.shopping_cart || [],
-            createdAt: userData.createdAt,
-            updatedAt: userData.updatedAt
-          })
-        );
-      } else {
-        dispatch(setUser(null));
-      }
-    } catch (err) {
-   AxiosError(err);
+  try {
+    updateLoadingState('user', true);
+    const userData = await fetchUserDetails();
+
+    if (userData && Object.keys(userData).length > 0) {
+      dispatch(
+        setUser({
+          id: userData.id || userData._id || "",
+          name: userData.name || "",
+          email: userData.email || "",
+          mobile: userData.mobile || "",
+          role: userData.role || "user",
+          status: userData.status || "active",
+          address_details: userData.address_details || [],
+          orderHistory: userData.orderHistory || [],
+          shopping_cart: userData.shopping_cart || [],
+          createdAt: userData.createdAt,
+          updatedAt: userData.updatedAt
+        })
+      );
+    } else {
       dispatch(setUser(null));
-    } finally {
-      updateLoadingState('user', false);
     }
-  }, [dispatch]);
-
+  } catch (err) {
+    dispatch(setUser(null));
+  } finally {
+    updateLoadingState('user', false);
+  }
+}, [dispatch]);
  
   const fetchProductsAndFlashSale = useCallback(async () => {
     try {
@@ -161,7 +174,7 @@ const GlobalProvider = ({ children }) => {
       
         dispatch(setFlashSaleProducts(flashProducts.slice(0, 10)));
       } else {
-        console.log("API response success false:", res.data);
+        AxiosError(res.data);
       }
     } catch (error) {
       AxiosError(error);
@@ -188,17 +201,29 @@ const GlobalProvider = ({ children }) => {
     initializeApp();
   }, [fetchAllCategory, fetchAllSubCategory, fetchUser, fetchCart, fetchWishlist, fetchProductsAndFlashSale]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token && isInitialized) {
-      fetchCart();
-      fetchWishlist();
-    } else if (!token && isInitialized) {
-      dispatch(clearCart());
-      dispatch(setWishlist([]));
-    }
-  }, [isInitialized, fetchCart, fetchWishlist, dispatch]);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (token && isInitialized) {
+  //     fetchCart();
+  //     fetchWishlist();
+  //   } else if (!token && isInitialized) {
+  //     dispatch(clearCart());
+  //     dispatch(setWishlist([]));
+  //   }
+  // }, [isInitialized, fetchCart, fetchWishlist, dispatch]);
 
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token && isInitialized) {
+    fetchCart();
+    fetchWishlist();
+    fetchUser();
+  } else if (!token && isInitialized) {
+    dispatch(clearCart());
+    dispatch(setWishlist([]));
+    dispatch(setUser(null)); 
+  }
+}, [isInitialized, fetchCart, fetchWishlist, fetchUser, dispatch]);
   if (!isInitialized) {
     return (
       <div className="fixed inset-0 bg-white flex items-center justify-center z-50">

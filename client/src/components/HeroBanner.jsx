@@ -34,6 +34,7 @@ const HeroBanner = ({ autoPlay = true, interval = 5000, isAdmin = false }) => {
         ...summaryApi().getBanners,
         headers: { 'Content-Type': 'application/json' }
       });
+      console.log(response.data)
       setBanners(response.data);
       setLoading(false);
     } catch (error) {
@@ -60,6 +61,7 @@ const HeroBanner = ({ autoPlay = true, interval = 5000, isAdmin = false }) => {
         data: formData,
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      
       toast.success("Banner uploaded successfully");
       await fetchBanners();
       setShowUpload(false);

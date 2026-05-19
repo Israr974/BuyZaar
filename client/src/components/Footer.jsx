@@ -202,7 +202,7 @@ const Footer = () => {
         <div className="mt-8 pt-6 border-t border-border">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-text-muted text-sm text-center md:text-left">
-              © {currentYear} BuyZaar. All rights reserved.
+              {currentYear} BuyZaar. All rights reserved
             </p>
             <div className="flex gap-6 text-sm">
               <Link to="/privacy" className="text-text-muted hover:text-primary transition-colors">
@@ -216,6 +216,15 @@ const Footer = () => {
               </Link>
             </div>
           </div>
+          <div className="text-center mt-3 sm:mt-4">
+  <span className="inline-flex items-center gap-1.5 sm:gap-2 md:gap-3 px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 md:py-2 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <span className="text-[10px] sm:text-xs md:text-sm text-gray-500">Made by</span>
+    <span className="text-xs sm:text-sm md:text-base font-semibold text-gray-800 dark:text-white">
+      Israr 
+    </span>
+    <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-green-500"></span>
+  </span>
+</div>
         </div>
       </div>
 

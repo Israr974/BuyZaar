@@ -28,8 +28,8 @@ const Header = () => {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
-  
-  
+
+  const [logoutTrigger, setLogoutTrigger] = useState(0);
   const user = useSelector((state) => state.user);
   const cartitems = useSelector((state) => state.cart?.cartitems || []);
   const wishlistCount = useSelector((state) => state.wishlist?.items?.length || 0);
@@ -44,6 +44,16 @@ const Header = () => {
     setUserMenuOpen(false);
     setMobileSearchOpen(false);
   }, [location.pathname]);
+
+
+
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token && user?.id === undefined) {
+      setLogoutTrigger(prev => prev + 1);
+    }
+  }, [user?.id]);
 
   const checkScrollPosition = () => {
     if (categoriesContainerRef.current) {
@@ -87,15 +97,15 @@ const Header = () => {
 
   const totalProducts = cartitems.length;
 
-const totalPrice = cartitems.reduce(
-  (sum, item) => {
-    const originalPrice = item.productId?.price || 0;
-    const discount = item.productId?.discount || 0;
-    const discountedPrice = calculateDiscountedPrice(originalPrice, discount);
-    return sum + (discountedPrice * (item.quantity || 0));
-  },
-  0
-);
+  const totalPrice = cartitems.reduce(
+    (sum, item) => {
+      const originalPrice = item.productId?.price || 0;
+      const discount = item.productId?.discount || 0;
+      const discountedPrice = calculateDiscountedPrice(originalPrice, discount);
+      return sum + (discountedPrice * (item.quantity || 0));
+    },
+    0
+  );
 
   const isSearchPage = location.pathname === "/search";
 
@@ -162,7 +172,7 @@ const totalPrice = cartitems.reduce(
                 </button>
 
                 {user?.id ? (
-                  <div className="relative">
+                  <div key={logoutTrigger} className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/5 transition"
@@ -273,7 +283,7 @@ const totalPrice = cartitems.reduce(
 
               <div className="flex items-center gap-0.5 flex-shrink-0">
                 <DarkModeToggle />
-               
+
                 <button
                   onClick={() => navigate("/dashboard/wishlist")}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
@@ -286,7 +296,7 @@ const totalPrice = cartitems.reduce(
                     </span>
                   )}
                 </button>
-                
+
                 <button
                   onClick={() => setOpencart(true)}
                   className="relative p-2 rounded-lg hover:bg-primary/5"
@@ -332,7 +342,7 @@ const totalPrice = cartitems.reduce(
             <div className="mt-3 overflow-x-auto pb-2 hide-scrollbar">
               <div className="flex items-center gap-2 min-w-max">
                 <button className="px-3 py-1.5 rounded-full bg-gradient-primary text-white text-xs font-medium whitespace-nowrap">
-                   Sale!
+                  Sale!
                 </button>
                 {allCategories.map((category) => (
                   <Link

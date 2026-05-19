@@ -1,4 +1,4 @@
-  export const baseUrl = "https://buyzaar-0evg.onrender.com"
+   export const baseUrl = "https://buyzaar-0evg.onrender.com"
 // export const baseUrl = "http://localhost:3000"
 
 

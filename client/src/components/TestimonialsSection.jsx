@@ -18,7 +18,6 @@ const TestimonialsSection = ({ limit = 3 }) => {
     try {
       setLoading(true);
       const response = await Axios(summaryApi().getAllReviews);
-      console.log("Reviews response:", response.data);
       
       let reviews = [];
       if (response.data?.success && Array.isArray(response.data.data)) {
