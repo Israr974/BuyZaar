@@ -11,8 +11,9 @@ import ShowMenu from "./ShowMenu";
 import DarkModeToggle from "./DarkModeToggle";
 import { formatINR } from "../utils/formatINR";
 import { validateUrlConverter } from "../utils/validateUrl";
-import logo from "../assets/logoBuyZaar.svg"
-import { calculateDiscountedPrice, formatPrice } from "../utils/priceUtils";
+import logo from "../assets/logoBuyZaar.svg";
+import { calculateDiscountedPrice } from "../utils/priceUtils";
+
 const Header = () => {
   const [isMobile] = useMobile();
   const location = useLocation();
@@ -27,7 +28,6 @@ const Header = () => {
   const categoriesContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-
 
   const [logoutTrigger, setLogoutTrigger] = useState(0);
   const user = useSelector((state) => state.user);
@@ -44,9 +44,6 @@ const Header = () => {
     setUserMenuOpen(false);
     setMobileSearchOpen(false);
   }, [location.pathname]);
-
-
-
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -101,7 +98,7 @@ const Header = () => {
     (sum, item) => {
       const originalPrice = item.productId?.price || 0;
       const discount = item.productId?.discount || 0;
-      const discountedPrice = calculateDiscountedPrice(originalPrice, discount);
+      const discountedPrice = originalPrice - (originalPrice * discount / 100);
       return sum + (discountedPrice * (item.quantity || 0));
     },
     0
@@ -112,25 +109,42 @@ const Header = () => {
   if (isSearchPage) return null;
 
   const Logo = () => (
-    <h1 className="text-xl md:text-2xl font-extrabold">
-      <span className="text-blue-600">Buy</span>
-      <span className="text-orange-500">Zaar</span>
+    <h1 className="text-xl md:text-2xl font-black tracking-wide flex items-center">
+      <span className="px-4 py-1 rounded-2xl bg-blue-700 text-white shadow-xl">
+        Buy
+      </span>
+      <span className="ml-2 text-orange-400 relative">
+        Zaar
+        <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-orange-400 rounded-full"></span>
+      </span>
+    </h1>
+  );
+
+  const MobileLogo = () => (
+    <h1 className="text-sm font-black tracking-wide flex items-center">
+      <span className="px-2 py-0.5 rounded-xl bg-blue-700 text-white shadow-lg">
+        Buy
+      </span>
+      <span className="ml-1.5 text-orange-400 relative">
+        Zaar
+        <span className="absolute left-0 -bottom-0.5 h-[2px] w-full bg-orange-400 rounded-full"></span>
+      </span>
     </h1>
   );
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-card shadow-sm border-b border-border">
+      <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
         {!isMobile ? (
           <div className="container-wide">
             <div className="flex items-center justify-between px-6 py-4 gap-4">
               <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
-                <div className="rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                <div className="rounded-full flex items-center justify-center shadow-md">
                   <img src={logo} alt="logo" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
                 </div>
                 <div>
                   <Logo />
-                  <p className="text-xs text-text-muted hidden lg:block">Just Buy It!</p>
+                  <p className="text-xs text-gray-500 hidden lg:block">Just Buy It!</p>
                 </div>
               </Link>
 
@@ -138,17 +152,17 @@ const Header = () => {
                 <form onSubmit={handleSearch} className="relative w-full">
                   <div className="relative w-full">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                      <Search className="w-5 h-5 text-text-muted" />
+                      <Search className="w-5 h-5 text-gray-400" />
                     </div>
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search products, brands, and categories..."
-                      className="w-full h-12 pl-11 pr-28 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text placeholder:text-text-muted/60"
+                      className="w-full h-12 pl-11 pr-28 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-800 placeholder:text-gray-400"
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                      <button type="submit" className="btn btn-primary px-4 py-1.5 text-sm whitespace-nowrap">
+                      <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 text-sm whitespace-nowrap rounded-lg hover:bg-blue-700 transition">
                         Search
                       </button>
                     </div>
@@ -161,11 +175,11 @@ const Header = () => {
 
                 <button
                   onClick={() => navigate("/dashboard/wishlist")}
-                  className="relative p-2 hover:bg-primary/5 rounded-lg transition group"
+                  className="relative p-2 hover:bg-gray-100 rounded-lg transition group"
                 >
-                  <Heart className="w-5 h-5 text-text-muted group-hover:text-primary" />
+                  <Heart className="w-5 h-5 text-gray-600" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
                       {wishlistCount}
                     </span>
                   )}
@@ -175,16 +189,16 @@ const Header = () => {
                   <div key={logoutTrigger} className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/5 transition"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
                     >
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white font-semibold">
                         {user?.name?.charAt(0).toUpperCase()}
                       </div>
                       <div className="text-left hidden lg:block">
                         <p className="text-sm font-semibold">{user?.name?.split(' ')[0] || "Account"}</p>
-                        <p className="text-xs text-text-muted">My Account</p>
+                        <p className="text-xs text-gray-500">My Account</p>
                       </div>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {userMenuOpen && (
@@ -199,7 +213,7 @@ const Header = () => {
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => navigate("/login")} className="btn btn-primary px-5 py-2">
+                  <button onClick={() => navigate("/login")} className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">
                     <User className="w-4 h-4 mr-2" />
                     Login
                   </button>
@@ -207,33 +221,33 @@ const Header = () => {
 
                 <button
                   onClick={() => setOpencart(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 transition group relative"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition group relative"
                 >
                   <div className="relative">
-                    <ShoppingBag className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                    <ShoppingBag className="w-5 h-5 text-blue-600" />
                     {totalProducts > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-accent text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                      <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
                         {totalProducts}
                       </span>
                     )}
                   </div>
                   <div className="text-left hidden lg:block">
                     <p className="text-sm font-semibold">Cart</p>
-                    <p className="text-xs text-text-muted">{formatINR(totalPrice)}</p>
+                    <p className="text-xs text-gray-500">{formatINR(totalPrice)}</p>
                   </div>
                 </button>
               </div>
             </div>
 
-            <div className="bg-gradient-primary border-t border-border/20 relative">
-              <div className="relative px-6 py-3">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg mt-2 mb-1">
+              <div className="relative px-6 py-2.5">
                 {showLeftArrow && (
                   <button
                     onClick={() => scrollCategories('left')}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-blue-700 text-white p-1.5 rounded-full shadow-lg hover:bg-blue-800 transition-all"
                     aria-label="Scroll left"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={16} />
                   </button>
                 )}
 
@@ -256,29 +270,28 @@ const Header = () => {
                 {showRightArrow && (
                   <button
                     onClick={() => scrollCategories('right')}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gradient-primary text-white p-2 rounded-full shadow-lg hover:bg-white/20 transition-all"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-blue-700 text-white p-1.5 rounded-full shadow-lg hover:bg-blue-800 transition-all"
                     aria-label="Scroll right"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={16} />
                   </button>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
+          <div className="px-3 py-2">
+            <div className="flex items-center justify-between gap-2 mb-2">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/5"
-                aria-label="Menu"
+                className="p-2 rounded-lg bg-gray-100 active:bg-gray-200 transition flex-shrink-0"
               >
-                <Menu className="w-6 h-6 text-text" />
+                <Menu className="w-5 h-5 text-gray-700" />
               </button>
 
-              <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-                <img src={logo} alt="logo" className="w-8 h-8 object-contain" />
-                <Logo />
+              <Link to="/" className="flex items-center gap-1.5 flex-shrink-0 min-w-0">
+                <img src={logo} alt="logo" className="w-6 h-6 object-contain flex-shrink-0" />
+                <MobileLogo />
               </Link>
 
               <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -286,26 +299,24 @@ const Header = () => {
 
                 <button
                   onClick={() => navigate("/dashboard/wishlist")}
-                  className="relative p-2 rounded-lg hover:bg-primary/5"
-                  aria-label="Wishlist"
+                  className="relative p-1.5 rounded-lg active:bg-gray-200 transition"
                 >
-                  <Heart className="w-5 h-5 text-text-muted" />
+                  <Heart className="w-4 h-4 text-gray-600" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-4 h-4 flex items-center justify-center rounded-full font-bold">
-                      {wishlistCount}
+                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full font-bold">
+                      {wishlistCount > 9 ? '9+' : wishlistCount}
                     </span>
                   )}
                 </button>
 
                 <button
                   onClick={() => setOpencart(true)}
-                  className="relative p-2 rounded-lg hover:bg-primary/5"
-                  aria-label="Cart"
+                  className="relative p-1.5 rounded-lg active:bg-gray-200 transition"
                 >
-                  <ShoppingBag className="w-5 h-5 text-primary" />
+                  <ShoppingBag className="w-4 h-4 text-blue-600" />
                   {totalProducts > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-4 h-4 flex items-center justify-center rounded-full font-bold">
-                      {totalProducts}
+                    <span className="absolute -top-0.5 -right-0.5 bg-orange-500 text-white text-[9px] w-3.5 h-3.5 flex items-center justify-center rounded-full font-bold">
+                      {totalProducts > 9 ? '9+' : totalProducts}
                     </span>
                   )}
                 </button>
@@ -313,42 +324,40 @@ const Header = () => {
                 {!user?.id && (
                   <button
                     onClick={() => navigate("/login")}
-                    className="p-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition"
-                    aria-label="Login"
+                    className="p-1.5 rounded-lg bg-blue-600 text-white active:bg-blue-700 transition"
                   >
-                    <User className="w-5 h-5" />
+                    <User className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="mt-3">
-              <form onSubmit={handleSearch} className="relative w-full">
-                <div className="relative w-full">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Search className="w-4 h-4 text-text-muted" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full h-10 pl-9 pr-4 rounded-lg bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm text-text placeholder:text-text-muted/60"
-                  />
-                </div>
+            <div className="mt-2">
+              <form onSubmit={handleSearch} className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full h-10 pl-9 pr-3 rounded-lg bg-gray-100 border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm text-gray-800 placeholder:text-gray-400"
+                />
               </form>
             </div>
 
             <div className="mt-3 overflow-x-auto pb-2 hide-scrollbar">
-              <div className="flex items-center gap-2 min-w-max">
-                <button className="px-3 py-1.5 rounded-full bg-gradient-primary text-white text-xs font-medium whitespace-nowrap">
-                  Sale!
-                </button>
-                {allCategories.map((category) => (
+              <div className="flex items-center gap-2 min-w-max bg-blue-600 rounded-lg px-2 py-1.5">
+                <Link
+                  to="/flash-sale"
+                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold shadow-md"
+                >
+                  SALE
+                </Link>
+                {allCategories.slice(0, 8).map((category) => (
                   <Link
                     key={category._id}
                     to={`/${validateUrlConverter(category.name)}-${category._id}/all-all`}
-                    className="px-3 py-1.5 rounded-full bg-bg-alt text-text-muted text-xs font-medium whitespace-nowrap hover:bg-primary hover:text-white transition"
+                    className="px-3 py-1.5 rounded-full text-white text-xs font-medium whitespace-nowrap active:bg-blue-700 transition"
                   >
                     {category.name}
                   </Link>
@@ -364,7 +373,7 @@ const Header = () => {
               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-50 shadow-2xl animate-slide-in-left overflow-y-auto">
+            <div className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white z-50 shadow-2xl animate-slide-in-left overflow-y-auto">
               <ShowMenu
                 user={user}
                 onClose={() => setMobileMenuOpen(false)}
@@ -381,22 +390,22 @@ const Header = () => {
               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
               onClick={() => setMobileSearchOpen(false)}
             />
-            <div className="fixed top-0 left-0 right-0 bg-card z-50 p-4 shadow-lg animate-slide-in-down">
+            <div className="fixed top-0 left-0 right-0 bg-white z-50 p-4 shadow-lg animate-slide-in-down">
               <form onSubmit={handleSearch} className="relative w-full">
                 <div className="relative w-full">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Search className="w-5 h-5 text-text-muted" />
+                    <Search className="w-5 h-5 text-gray-400" />
                   </div>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="What are you looking for?"
-                    className="w-full h-12 pl-10 pr-16 rounded-xl bg-bg-alt border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-text"
+                    className="w-full h-12 pl-10 pr-16 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-800"
                     autoFocus
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <button type="submit" className="btn btn-primary px-3 py-1.5 text-sm whitespace-nowrap">
+                    <button type="submit" className="bg-blue-600 text-white px-3 py-1.5 text-sm whitespace-nowrap rounded-lg">
                       Go
                     </button>
                   </div>
@@ -404,7 +413,7 @@ const Header = () => {
               </form>
               <button
                 onClick={() => setMobileSearchOpen(false)}
-                className="absolute right-4 top-4 text-text-muted hover:text-text transition-colors"
+                className="absolute right-4 top-4 text-gray-500 hover:text-gray-800 transition-colors"
                 aria-label="Close search"
               >
                 <X className="w-5 h-5" />
@@ -416,7 +425,7 @@ const Header = () => {
         {opencart && <DisplayCart close={() => setOpencart(false)} />}
       </header>
 
-      <style >{`
+      <style>{`
         @keyframes slide-in-left {
           from { transform: translateX(-100%); }
           to { transform: translateX(0); }
